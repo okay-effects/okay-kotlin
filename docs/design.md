@@ -61,10 +61,15 @@ body out, so the shift reaches the next loop, and so on to the prompt's. The ans
 loop resumes the body with it. Each machine in between costs one relay; a handler in place costs nothing, it has no
 machine. A clause's `k` resumed from inside another handler is relayed in the same way.
 
-**The rest dropped.** A clause that returns without calling `k` drops the rest of the body. The rest is not left
-hanging: the machine resumes it with `Abandoned`, a `CancellationException`, so the body unwinds — its `finally`
-blocks run, `use` closes what it opened — and then gives the clause's value. This is okay-scala's `ensuring` and
-`bracket`, written as Kotlin writes them.
+**`k` is a value.** A clause may keep `k`, return, and have it resumed later — by a function it returns, by whoever
+it gives `k` to, after `handle` itself has returned. Resumed where no loop drives its machine, `k` starts one there:
+the rest runs under its handler again, where it is resumed. This is what the parameterised handlers of the
+literature do — state as a function of the state, `get _ k ↦ λs. k! s s`.
+
+**The rest dropped.** `k.drop()` resumes the rest with `Abandoned`, a `CancellationException`: the body unwinds — its
+`finally` blocks run, `use` closes what it opened — OCaml's `discontinue`. `abort(value)` drops the rest and gives
+`value`; `Fail`, `Abort` and `take` end so. A rest neither resumed nor dropped is left as it is: nothing can know
+that a kept `k` will never be resumed.
 
 **One-shot.** A Kotlin continuation is resumed once. `k` used twice is an error; multi-shot handlers — every way of a
 choice, `Choose.all` — need a continuation copied, which Kotlin does not give, or the body run again from the start,
@@ -93,6 +98,42 @@ A sensitive effect's handler gives a `Vault` instead of the capability, and `aud
 wrapped: the program cannot have the capability but through an interceptor. This is okay-direct's `Audit`; okay-direct's
 `Observer` — every operation of every effect, with no wrapper chosen — has no counterpart: it would tax every call
 of every handler answering in place, which is what makes them free.
+
+## Against the literature
+
+Forster, Kammar, Lindley and Pretnar (*On the Expressive Power of User-Defined Effects*, ICFP 2017) give three calculi
+on call-by-push-value: EFF (effect handlers), MON (monadic reflection), DEL (shift0 and its reset, `S0 k.M` and
+`⟨M|x.N⟩`). okay-kotlin's `handle` and `shift` are DEL's, with the reset named by its prompt; its handlers are EFF's,
+made of them as the paper's EFF→DEL translation makes them (§6.4). `SpecTest` runs the paper's examples and rules:
+
+| The paper | okay-kotlin | |
+|---|---|---|
+| (op): `k` = `λx.handle H[return x] with H` — deep | the rest resumed runs under the handler again | same |
+| (ret): `handle (return V) with H ⇝ H^ret[V/x]` | the body's value, through the code after it in `handle` | same |
+| (capture): `S0 k.M` runs `M` with the reset removed | the clause runs outside the body | same |
+| `k` a value, used any number of times | a value, used once | one-shot |
+| EFF state (Fig. 10), DEL state (Fig. 18) | `runStateEff`, `runStateDel`: a clause returns `λs. k(s)(s)` | same |
+| MON→EFF (§6.5) untypeable: operations monomorphic | `reflect`: an interface's generic function | as conjectured |
+| the operation handled by the nearest handler, at run time | by the handler whose capability it was given | lexical |
+
+**One-shot.** The calculi's continuations are thunks, forced any number of times; Kotlin's are resumed once. So
+okay-kotlin has the handlers that resume at most once — state, readers, writers, exceptions, generators,
+asynchrony, reflection of every monad whose bind calls its function at most once — and not nondeterminism's.
+
+**Lexical, not dynamic.** In EFF an operation is a name, and the nearest handler of that name on the stack takes it:
+a function made under one handler and called under another asks the second. In okay-kotlin an operation is a call
+of a capability, and the capability is the handler that made it: the function asks the first. This is the semantics
+of lexically scoped handlers — Zhang and Myers' tunnelling (POPL 2019), Biernacki et al.'s lexically scoped handlers
+(POPL 2020), Effekt's capabilities (Brachthäuser et al., OOPSLA 2020) — chosen there because the dynamic one breaks
+abstraction: a function that handles its own `Fail` inside would catch the failures of a callback it is given, which
+it knows nothing of. It is also the only one Kotlin can type: a handler found at run time by its effect's type finds
+an erased type — `State<Int>` and `State<String>` are one class — and its answer would need a cast.
+
+The two agree on every program that uses each capability under the handler that gave it, called from where it is in
+scope — the first-order programs; they differ when a function that performs is passed under another handler of the
+same effect. What lexical scoping costs: a capability can outlive its handler — kept in a variable, returned — and
+Kotlin has no capture checking to stop it. A handler answering in place keeps answering (it is an object); one that
+takes the rest fails at run time, `shift outside its handler's body`.
 
 ## Waiting for the outside
 

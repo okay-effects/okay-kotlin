@@ -12,7 +12,6 @@ import kotlin.coroutines.intrinsics.createCoroutineUnintercepted
 import kotlin.coroutines.intrinsics.intercepted
 import kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.startCoroutine
 
 /**
@@ -23,14 +22,22 @@ class Prompt<R> internal constructor() {
     internal lateinit var machine: Machine<R>
 }
 
-/** the rest of a handled body from an operation on: resumed once — a Kotlin continuation is one-shot — it gives
- * what the handler gives for the rest */
+/**
+ * THE REST OF A HANDLED BODY from an operation on, a value: kept, passed on, resumed in the clause or after it — even
+ * after `handle` has returned. Resumed, it runs under its handler again (a deep handler) where it is resumed, and gives
+ * what the handler gives for the rest. Once: a Kotlin continuation is one-shot.
+ */
 interface Resume<in X, out R> {
+    /** the rest, `x` the operation's value */
     suspend operator fun invoke(x: X): R
+
+    /** the rest dropped, and unwound: [Abandoned] thrown at the operation, so its `finally` blocks run — OCaml's
+     * `discontinue`. A rest neither resumed nor dropped is left as it is, its `finally` blocks not run */
+    suspend fun drop()
 }
 
-/** thrown at the operation whose handler dropped the rest of its body: the body unwinds, its `finally` blocks run and
- * its `use` closes what it opened; caught by the handler that dropped it. Control, not an error: on the JVM it has no
+/** thrown at the operation whose rest was dropped ([Resume.drop], [abort]): the body unwinds, its `finally` blocks run
+ * and its `use` closes what it opened; caught by `drop`. Control, not an error: on the JVM it has no
  * stack trace, which would cost more than the rest of a failure together */
 open class Abandoned internal constructor() : CancellationException("the rest of the body dropped by its handler")
 
@@ -50,9 +57,10 @@ suspend fun <R> handle(body: suspend (Prompt<R>) -> R): R {
 }
 
 /**
- * THE REST OF THE BODY, TAKEN: up to the prompt, as `k`; what `f` gives is what the body's handler gives. `k(x)` goes
- * on with `x` as this call's value; not resumed, the rest is dropped — [Abandoned] unwinds it. `f` runs outside the
- * body, where the handler is: an operation of its own effect there goes to the handler further out.
+ * THE REST OF THE BODY, TAKEN: up to the prompt, as `k`; what `f` gives is what the body's handler gives — shift0 and
+ * its reset, `S0 k.M` and `⟨M|x.N⟩`, of the literature, the prompt named. `k(x)` goes on with `x` as this call's value,
+ * the handler around it again; `k.drop()` unwinds it. `f` runs outside the body, where the handler is: an operation of
+ * its own effect there goes to the handler further out.
  */
 suspend fun <X, R> Prompt<R>.shift(f: suspend (k: Resume<X, R>) -> R): X =
     suspendCoroutineUninterceptedOrReturn { k ->
@@ -61,8 +69,11 @@ suspend fun <X, R> Prompt<R>.shift(f: suspend (k: Resume<X, R>) -> R): X =
         COROUTINE_SUSPENDED
     }
 
-/** the body ended here: `value` is what its handler gives, the rest dropped */
-suspend fun <R> Prompt<R>.abort(value: R): Nothing = shift { _ -> value }
+/** the body ended here: `value` is what its handler gives, the rest dropped and unwound */
+suspend fun <R> Prompt<R>.abort(value: R): Nothing = shift { k ->
+    k.drop()
+    value
+}
 
 /**
  * A PROGRAM OF NO EFFECT LEFT, RUN: every effect handled inside `body`. It may not wait for anything outside — a
@@ -120,6 +131,8 @@ internal class Machine<R>(private val prompt: Prompt<R>, val outer: CoroutineCon
     private var next: (() -> Unit)? = null
     private val frames = ArrayList<Continuation<R>>()
     private val wake = AtomicReference<Waker?>(null)
+    /** a loop is driving this machine: a `k` resumed outside it starts one where it is resumed */
+    private var driving = false
 
     fun done(r: Result<R>) {
         result = r
@@ -132,6 +145,15 @@ internal class Machine<R>(private val prompt: Prompt<R>, val outer: CoroutineCon
     }
 
     suspend fun drive(first: () -> Unit): R {
+        driving = true
+        try {
+            return loop(first)
+        } finally {
+            driving = false
+        }
+    }
+
+    private suspend fun loop(first: () -> Unit): R {
         var action: (() -> Unit)? = first
         while (true) {
             wake.store(null)
@@ -182,32 +204,42 @@ internal class Machine<R>(private val prompt: Prompt<R>, val outer: CoroutineCon
 
     private fun <X> start(o: Op<X, R>) {
         val k = Rest(o.k)
-        o.f.createCoroutineUnintercepted(k, Continuation(outer + clauses) { given ->
-            if (k.used) done(given)
-            else {
-                // the rest dropped: unwound, its `finally`s run, and then the clause's value
-                k.used = true
-                frames.add(Continuation(EmptyCoroutineContext) { done(given) })
-                next = { o.k.resumeWithException(abandoned()) }
-                signal()
-            }
-        }).resume(Unit)
+        o.f.createCoroutineUnintercepted(k, Continuation(outer + clauses) { done(it) }).resume(Unit)
     }
 
-    /** `k`: the clause waits in [frames], the body goes on with `x` */
+    /**
+     * `k`. Resumed in a clause of this machine: the clause waits in [frames], the body goes on. Resumed where no loop
+     * drives the machine — after its clause, after `handle` returned — a loop starts there. Resumed inside another
+     * handler's body, in a clause: relayed out to the clause's loop.
+     */
     private inner class Rest<X>(private val k: Continuation<X>) : Resume<X, R> {
-        var used = false
+        private var used = false
 
-        override suspend fun invoke(x: X): R = suspendCoroutineUninterceptedOrReturn { clause ->
-            val inner = clause.context[Running] ?: error("a continuation resumed outside its handler")
-            if (inner === clauses) {
-                check(!used) { "a continuation resumed twice, or after it was dropped: it is one-shot" }
+        override suspend fun invoke(x: X): R = resume(Result.success(x))
+
+        override suspend fun drop() {
+            try {
+                resume(Result.failure(abandoned()))
+            } catch (_: Abandoned) {
+            }
+        }
+
+        private suspend fun resume(x: Result<X>): R {
+            check(!used) { "a continuation resumed twice, or after it was dropped: it is one-shot" }
+            if (!driving) {
                 used = true
-                frames.add(clause)
-                next = { k.resume(x) }
-                signal()
-            } else inner.relay(Relay({ invoke(x) }, clause))
-            COROUTINE_SUSPENDED
+                return drive { k.resumeWith(x) }
+            }
+            return suspendCoroutineUninterceptedOrReturn { clause ->
+                val inner = clause.context[Running] ?: error("a continuation resumed outside its handler")
+                if (inner === clauses) {
+                    used = true
+                    frames.add(clause)
+                    next = { k.resumeWith(x) }
+                    signal()
+                } else inner.relay(Relay({ resume(x) }, clause))
+                COROUTINE_SUSPENDED
+            }
         }
     }
 }

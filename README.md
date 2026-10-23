@@ -100,7 +100,8 @@ suspend fun <A> answering(n: Int, body: suspend context(Ask) () -> A): A = handl
 |---|---|
 | `handle { prompt -> ... }` | the body delimited: `shift` and `abort` take the rest of it up to here |
 | `prompt.shift { k -> ... }` | the rest of the body as `k`, a `Resume<X, R>`: resumed once, it gives the rest's value |
-| `prompt.abort(value)` | the body ends here, the handler gives `value`; the rest unwinds with `Abandoned` |
+| `k.drop()` | the rest dropped and unwound: `Abandoned` thrown where it waits, its `finally` blocks run |
+| `prompt.abort(value)` | the body ends here, the handler gives `value`; the rest dropped |
 | `runEffects { ... }` | a program with every effect handled and nothing to wait for, run; otherwise `runBlocking` |
 
 ## The standard effects
@@ -178,10 +179,22 @@ runBlocking {
 }
 ```
 
+## Semantics
+
+The calculi of Forster, Kammar, Lindley and Pretnar's *On the Expressive Power of User-Defined Effects* (ICFP 2017),
+checked by `SpecTest`: `handle`/`shift` are its DEL (shift0 and reset, the reset named); handlers are its EFF, deep,
+made by its EFF→DEL translation; its examples — state in EFF, DEL and MON — run as written there. `k` is a value: a
+clause may keep it and have it resumed after it returns, after `handle` returns. `k.drop()` unwinds the rest
+(`finally` runs); `abort` drops it. [docs/design.md](docs/design.md#against-the-literature) has the comparison.
+
 ## Limits
 
 - One-shot: a Kotlin continuation is resumed once, and the library does not run a body again to fake more. Every way
   of a choice (`Choose.all`) is not here.
+- Handlers are chosen lexically, not dynamically as in EFF: an operation goes to the handler whose capability it was
+  given. A function made under one handler and called under another of the same effect asks the first — the
+  semantics of lexically scoped handlers, abstraction-safe; the only one Kotlin can type. A capability kept after its
+  handler returned fails, if its handler takes the rest of the body.
 - A general handler takes one operation at a time: children of a body that shift to the same prompt at once are not
   supported. Handlers in place have no such limit.
 
@@ -195,10 +208,10 @@ JMH on the JVM, `./gradlew :bench:jmh`, 1000 operations a run, µs per run, lowe
 | ask, under four other handlers | 0.6 | 1 176 |
 | the same, each through an interceptor passing it on | 2.1 | 16 240 |
 | the same, each seen by an observer with its answer | 17 | 168 392 |
-| a handler entered and left, no operation | 28 | 312 152 |
-| shift: the rest taken and resumed by the handler right outside | 32 | 279 552 |
+| a handler entered and left, no operation | 32 | 360 152 |
+| shift: the rest taken and resumed by the handler right outside | 32 | 271 600 |
 | shift across three delimiting handlers | 109 | 785 034 |
-| a failure, the rest dropped and unwound | 751 | 936 152 |
+| a failure, the rest dropped and unwound | 779 | 1 000 152 |
 
 A handler in place costs what an interface call costs — the same programs take 16–36 µs on okay-scala's machine. A
 `shift` costs about 280 bytes; a failure, its exception thrown through the body.
