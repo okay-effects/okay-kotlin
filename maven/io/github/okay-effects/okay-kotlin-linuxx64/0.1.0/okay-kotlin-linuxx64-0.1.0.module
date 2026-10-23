@@ -1,0 +1,72 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../okay-kotlin/0.1.0/okay-kotlin-0.1.0.module",
+    "group": "io.github.okay-effects",
+    "module": "okay-kotlin",
+    "version": "0.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.4.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "linuxX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.21"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "core-linuxX64Main-0.1.0.klib",
+          "url": "okay-kotlin-linuxx64-0.1.0.klib",
+          "size": 136223,
+          "sha512": "f2b3eb04a8b4390ad8de6a0a1e1a1108c93238a2f1362a1fa444b83107d32a7fd2de8f3feae1ce706e6bf4cfbad2fa972f5eb1ba3f3540cdd14177560ca1d9f3",
+          "sha256": "e210f3074d57788e8a4f9e54895c90f03ccdb515ee7734645bb8c20cbba7dab9",
+          "sha1": "1ad17a051cb5390b546f06045723b4a81201177c",
+          "md5": "4be358474d8f6988bb49d7cd34d094de"
+        }
+      ]
+    },
+    {
+      "name": "linuxX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "files": [
+        {
+          "name": "core-linuxx64-0.1.0-sources.jar",
+          "url": "okay-kotlin-linuxx64-0.1.0-sources.jar",
+          "size": 25106,
+          "sha512": "ac6b02c055455bd951d6f353764f1ab5f946da9e8d90f6cc768a62b931efaaac49f77a70a546098f8084170d350f64133791e434e4920cc60ad6bc51513908d0",
+          "sha256": "c1d92e8b824c7ce984f92b152bff19e7d9d830f9784b3aa2a2ffd25c8a5cde74",
+          "sha1": "ec09e7156cc6a1fb6096da4eee3608d4ab404660",
+          "md5": "fc1356ffa126a13b84259e7541914c98"
+        }
+      ]
+    }
+  ]
+}

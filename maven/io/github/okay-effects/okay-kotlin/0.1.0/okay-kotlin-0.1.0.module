@@ -1,0 +1,253 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "io.github.okay-effects",
+    "module": "okay-kotlin",
+    "version": "0.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.4.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "metadataApiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.21"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "core-metadata-0.1.0.jar",
+          "url": "okay-kotlin-0.1.0.jar",
+          "size": 21688,
+          "sha512": "55343858b7d944ee359e33bca53442352bd630c3bd3acfa6ecbeea83c4e2a03c07cb5780607f74e9a61a2e913bfc8d8be0d000c2899d99e924649a3f08f8cce8",
+          "sha256": "f67c61f161c75bec1e82adabec5ac193337575a9509fda68c16ede94c366c7ba",
+          "sha1": "38777e188d846f28196b414b3d51a9b46a8ae4f3",
+          "md5": "9d54ad7a78ceae258eb85f7defcfd057"
+        }
+      ]
+    },
+    {
+      "name": "metadataSourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "files": [
+        {
+          "name": "core-kotlin-0.1.0-sources.jar",
+          "url": "okay-kotlin-0.1.0-sources.jar",
+          "size": 25106,
+          "sha512": "1056c16d8c97009a9bb9edfecffd185f3e356dc9497b6f0dc6c522573cd4fc9526a8473f71d4cea829147ecf40aa45f5fe459a0af611458b47f5a004c5f551a3",
+          "sha256": "d9c7cdbfb71a9fe3421aa644c7c86ae1f107ea9751cffc288e99fd26eac0f839",
+          "sha1": "e2168b3a89221082a0f0c6907e3e08d111856617",
+          "md5": "e545c079521877832d7c004eed92d895"
+        }
+      ]
+    },
+    {
+      "name": "jsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-js/0.1.0/okay-kotlin-js-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-js",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "jsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-js/0.1.0/okay-kotlin-js-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-js",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "jsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-js/0.1.0/okay-kotlin-js-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-js",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "jvmApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-jvm/0.1.0/okay-kotlin-jvm-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-jvm",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "jvmRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-jvm/0.1.0/okay-kotlin-jvm-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-jvm",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "jvmSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-jvm/0.1.0/okay-kotlin-jvm-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-jvm",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "linuxX64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-linuxx64/0.1.0/okay-kotlin-linuxx64-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-linuxx64",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "linuxX64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "linux_x64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-linuxx64/0.1.0/okay-kotlin-linuxx64-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-linuxx64",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "macosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-macosarm64/0.1.0/okay-kotlin-macosarm64-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-macosarm64",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "macosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-macosarm64/0.1.0/okay-kotlin-macosarm64-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-macosarm64",
+        "version": "0.1.0"
+      }
+    },
+    {
+      "name": "macosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../okay-kotlin-macosarm64/0.1.0/okay-kotlin-macosarm64-0.1.0.module",
+        "group": "io.github.okay-effects",
+        "module": "okay-kotlin-macosarm64",
+        "version": "0.1.0"
+      }
+    }
+  ]
+}

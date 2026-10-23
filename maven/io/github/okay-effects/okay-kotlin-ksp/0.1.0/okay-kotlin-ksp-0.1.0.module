@@ -1,0 +1,109 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "io.github.okay-effects",
+    "module": "okay-kotlin-ksp",
+    "version": "0.1.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.4.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 21,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.21"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "okay-kotlin-ksp-0.1.0.jar",
+          "url": "okay-kotlin-ksp-0.1.0.jar",
+          "size": 13303,
+          "sha512": "ae301e52bf15c256e915eb0e736e2deefe8066f438b1f004f6bb46728f4ab733326461a42407836c59cd01f92dbf5af42e95f72d2a5ccba93e3682f642bf8ccb",
+          "sha256": "e7382717d087804f43a1f4bebe51db8d051c67589a32ca13cb80b7bba67668d8",
+          "sha1": "271484e4bdf0fe797519bdf94b29451f54215bbd",
+          "md5": "bde5dacc5bacfe7ef8f5808aa6e945b1"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 21,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "com.google.devtools.ksp",
+          "module": "symbol-processing-api",
+          "version": {
+            "requires": "2.3.12"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.21"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "okay-kotlin-ksp-0.1.0.jar",
+          "url": "okay-kotlin-ksp-0.1.0.jar",
+          "size": 13303,
+          "sha512": "ae301e52bf15c256e915eb0e736e2deefe8066f438b1f004f6bb46728f4ab733326461a42407836c59cd01f92dbf5af42e95f72d2a5ccba93e3682f642bf8ccb",
+          "sha256": "e7382717d087804f43a1f4bebe51db8d051c67589a32ca13cb80b7bba67668d8",
+          "sha1": "271484e4bdf0fe797519bdf94b29451f54215bbd",
+          "md5": "bde5dacc5bacfe7ef8f5808aa6e945b1"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "okay-kotlin-ksp-0.1.0-sources.jar",
+          "url": "okay-kotlin-ksp-0.1.0-sources.jar",
+          "size": 3742,
+          "sha512": "947b5fdff756a1b96775bd8ef5bd6186c4f65777ce8860c552c9c51364e085f6e63de28c74b74bb05576a26dc4d3986cc3827a188b466fc68719f9e9b609e3d8",
+          "sha256": "0d398b0e4f1730f82921cd8301f7d3c6d0e7c6274a25de3810271046d4aa586d",
+          "sha1": "2d255c0fc55debdca5cf91093073752b38590bdb",
+          "md5": "c906ab299f03b7b11e2e5c883d2913d0"
+        }
+      ]
+    }
+  ]
+}
