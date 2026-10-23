@@ -20,6 +20,10 @@ Read before anything else, then `docs/design.md`.
   assume it is resumed inside its clause.
 - Multi-shot by COPYING the rest's frames (`Resume.copy`, `Frames.jvm.kt`, `Frames.js.kt`), never by replay (the
   user's rule). Native has none. A copy is taken before `k` is resumed; a delimiting handler between refuses it.
+- `okay.kotlin.effects`: effects as data, ONE PROGRAM, TWO ENGINES — `Effects<F>` the interface, `Machine` (CEK,
+  okay-scala's) and `Direct` (this library's continuations). Programs and standard handlers are written once, generic
+  in `F`; `EffectsTck` holds both engines to the same answers — a new handler or word gets a line there. Rows `With`,
+  typed places; a handler gives its body its place, `lift` carries outer ones in.
 - No casts, no `!!` in the library. Warnings are errors.
 - A handler's type parameters cannot be inferred from what its body asks of the context: tests and docs write
   `either<String, _> { ... }`. Do not "fix" it with overloads that guess.

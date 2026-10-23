@@ -126,6 +126,42 @@ suspend fun <A> answering(n: Int, body: suspend context(Ask) () -> A): A = handl
 Generic handlers are given their effect's type: `either<String, _> { ... }`, `collect<Int, _> { ... }` — Kotlin infers
 type parameters from arguments, not from what a lambda asks of its context.
 
+## Effects as data: one program, two engines
+
+`okay.kotlin.effects` is the other style of the family, okay-simple's and okay-scala's: an operation is data, a
+program is data — `Prog<F, R, A>`, of an engine `F`, performing the effects of the row `R` — and handlers interpret
+it. A program is written once, generic in its engine, which it takes as a context parameter (Scala's import, here a
+parameter); the rows and the typed places are okay-scala's, so an operation goes to the nearest handler of its effect
+at run time, as in the literature's EFF.
+
+```kotlin
+// an effect: operations as data; `answer` turns the state into the operation's own answer type, with no cast
+class State<S> private constructor() {
+    class Get<S, X>(val answer: (S) -> X) : Op<State<S>, X>
+    class Put<S, X>(val value: S, val answer: (Unit) -> X) : Op<State<S>, X>
+}
+
+// a program: any engine F, any row R with a State<Int> and a Fail<String> — its places say where
+context(fx: Effects<F>, st: In<State<Int>, R>, fail: In<Fail<String>, R>)
+fun <F, R> tick(): Prog<F, R, Int> = get<F, Int, R>().flatMap { n ->
+    if (n >= 3) raise("big $n") else put<F, Int, R>(n + 1).with(n)
+}
+
+// run on either engine: the handler gives its body its own place; a place from outside is lifted past it
+with(Machine) { run(either<_, String, _, _> { fail -> state(0) { context(lift(fail)) { tick() } } }) }
+with(Direct)  { run(either<_, String, _, _> { fail -> state(0) { context(lift(fail)) { tick() } } }) }
+```
+
+| Engine | What it is |
+|---|---|
+| `Machine` | okay-scala's CEK machine: `k` is data — deep, multi-shot on every platform, native too |
+| `Direct` | this library's continuations: a handler in place a call; `k` copied where a continuation can be |
+
+Handlers come in okay-scala's shapes — `General` (`k`, any number of times), `Tail` (answered in place), `Abort` (the
+rest dropped), `Stateful` (in place, a state of its own) — and the standard ones are written once, for both:
+`state`, `reader`, `writer`, `either`, `all`, `first`, `take`. `EffectsTck` holds every engine to the same answers;
+`SpecTck` runs the paper's EFF state (Fig. 10) on both.
+
 ## Interception: control and audit
 
 An effect's capability wrapped by `intercepted(interceptor)` shows each operation to the interceptor first, as data —
@@ -242,7 +278,12 @@ JMH on the JVM, `./gradlew :bench:jmh`, 1000 operations a run, µs per run, lowe
 | shift: the rest taken and resumed by the handler right outside | 32 | 271 600 |
 | shift across three delimiting handlers | 109 | 785 034 |
 | multi-shot: every Pythagorean triple to 30 — 4 959 copies, 5 456 dead ends | 4 752 | 4 449 170 |
+| as data on `Machine`: 1000 gets and puts / every triple to 30 | 62 / 411 | 668 673 / 3 214 168 |
+| as data on `Direct`: the same | 59 / 2 699 | 573 013 / 6 224 097 |
 | a failure, the rest dropped and unwound | 779 | 1 000 152 |
+
+Data costs what data costs: a node and a closure a step — 40 times an interface call. Multi-shot is where it pays:
+the machine's `k` is data, nothing copied, ten times faster than copying frames.
 
 A handler in place costs what an interface call costs — the same programs take 16–36 µs on okay-scala's machine. A
 `shift` costs about 280 bytes; a failure, its exception thrown through the body.

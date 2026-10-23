@@ -152,6 +152,40 @@ the frame's own, so it is copied with it — a range's on JavaScript, a collecti
 is opened). A frame of a handler that delimits its body cannot be copied — its machine would be one for both copies —
 so a copy is refused when the operation came through one (`relayed`); the copying handler goes inside it.
 
+## Effects as data, and engines
+
+`okay.kotlin.effects` is the family's other style, whose programs okay-simple runs on its machine and its Free and
+okay-scala on its CEK machine: an operation is data, a program is data, a handler interprets it.
+
+**The interface.** okay-simple's `Effects` has an abstract type of programs, `A ! R`, each implementation its own.
+Kotlin has no type of a type constructor; so an engine is named by a type `F`, its programs are `Prog<F, R, A>` — an
+abstract class each engine's nodes extend — and `Effects<F>` is its words. A program generic in `F` takes its engine
+as a context parameter: Scala's import, as a parameter. An engine refuses another's program with an error, never a
+cast: `is Node` on a `Prog<Machine, R, A>` finds the node's type by its declaration.
+
+**Rows and places.** okay-scala's `R + E` is `With<E, R>`; an operation of the row is `At<R, X>`, placed; a `Place<E,
+R, Rest>` injects an operation of `E` into `R`, takes one of `R` apart into `E`'s own or another's in `Rest`, and finds
+`E`'s handler in a row of handler objects — each place a class that knows its shape, which is what okay-scala's
+matches on GADTs know. Scala finds places by implicit search; Kotlin does not, so a handler gives its body the place
+of its effect (as a context parameter and as `it`), and a place from outside is lifted past it by `lift`, its types
+inferred from the handler's `Under<G, Rest>`.
+
+**Answers.** A `when` over an operation does not tell Kotlin that `X` is the case's answer type: an operation whose
+class fixes its answer carries `answer`, the function from its answer to `X` — the identity, made by its word. One
+whose answer is its own type parameter (`Choose.Among<X>`) needs none. An effect's operations are open, so a `when`
+over them has an `else`: `foreign(op)`.
+
+**The machine** is okay-scala's, with Kotlin's dispatch in place of matches: a node takes its step, a frame its value,
+a level its operation — each knowing its own types, so the machine has no cast. An operation crosses levels into
+`Crossed`; at its handler `k` is a node that puts them back on whatever is outside when it is resumed. Deep,
+multi-shot, a loop — on every platform.
+
+**Direct** runs the same programs on okay-kotlin's continuations: binds in a loop, the row's handlers objects, found
+at their places ([`Handlers`]). A handler in place (`Tail`, `Stateful`) is a call; one taking the rest a prompt, `k`
+the coroutine's rest, copied for each resumption where a copy can be made — not across another prompt, where it is
+one-shot. A `k` resumed under other handlers than where it was taken finds, for the effects outside its own, the
+handlers of where it was taken: the machine finds those of where it is resumed.
+
 ## Waiting for the outside
 
 A body may suspend for something that is not an effect — `delay`, `withContext(Dispatchers.IO)`, an `await`. Then the
