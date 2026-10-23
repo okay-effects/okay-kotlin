@@ -31,3 +31,9 @@ kotlin {
 }
 
 tasks.withType<Test> { jvmArgs("-Xss512k", "--add-opens", "java.base/java.util=ALL-UNNAMED") }
+
+// the artifacts are okay-kotlin, okay-kotlin-jvm, okay-kotlin-js, ...: the module's name is core
+publishing {
+    publications.withType<MavenPublication>().configureEach { artifactId = artifactId.replace("core", "okay-kotlin") }
+}
+

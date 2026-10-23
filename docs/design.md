@@ -189,7 +189,7 @@ argument: a context may hold places of several effects, and which is meant is no
 
 **Fuel.** The machine's steps return the next turn to its loop; that is an allocation a step. A step instead takes
 the next one by calling it, 32 deep, before it gives a turn back: the stack stays bounded, a third of the allocation
-goes.
+goes, and nearly half the time (1000 gets and puts: 62 → 34 µs).
 
 **Direct** runs the same programs on okay-kotlin's continuations: binds in a loop, the row's handlers objects, found
 at their places ([`Handlers`]). A handler in place (`Tail`, `Stateful`) is a call; one taking the rest a prompt, `k`

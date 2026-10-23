@@ -1,11 +1,23 @@
 # okay-kotlin
 
-Algebraic effects for Kotlin, in Kotlin's own terms: an effect is an interface of suspend functions, the effects a
-program needs are its context parameters, a handler is a function that implements the interface and runs the body
-with it. Handlers that take the rest of the body — failure, early ends, generators, your own — are delimited
-continuations on Kotlin's coroutines: deep, in constant stack; multi-shot on the JVM and JavaScript, the rest's
-frames copied. Kotlin 2.4, JVM, JS and native; no
-dependency, the continuations are the standard library's. Runs inside kotlinx.coroutines as any suspend code does.
+Algebraic effects for Kotlin, in two styles of one family.
+
+- **Interfaces** (`okay.kotlin`): an effect is an interface of suspend functions, the effects a program needs are its
+  context parameters, a handler is a function that implements the interface and runs the body with it. Handlers
+  that take the rest of the body are delimited continuations on Kotlin's coroutines: deep, in constant stack;
+  multi-shot on the JVM and JavaScript, the rest's frames copied. Interception, and its generator for your effects.
+- **Data** (`okay.kotlin.effects`): an operation and a program are data, rows and typed places as in okay-scala, and
+  one program runs on two engines — okay-scala's CEK machine (multi-shot everywhere) or the coroutines.
+
+Kotlin 2.4; JVM, JS and native; no dependency — the continuations are the standard library's. Runs inside
+kotlinx.coroutines as any suspend code does.
+
+```kotlin
+repositories { maven("https://okay-effects.github.io/okay-kotlin/maven") }
+dependencies { implementation("io.github.okay-effects:okay-kotlin:0.1.0") }
+```
+
+[RELEASING.md](RELEASING.md) has the rest: the generator of interception, the platforms.
 
 The okay family's effects — [okay-simple](https://github.com/okay-effects/okay-simple),
 [okay-scala](https://github.com/okay-effects/okay-scala), [okay-direct](https://github.com/okay-effects/okay-direct) —
@@ -280,12 +292,12 @@ JMH on the JVM, `./gradlew :bench:jmh`, 1000 operations a run, µs per run, lowe
 | shift: the rest taken and resumed by the handler right outside | 32 | 271 600 |
 | shift across three delimiting handlers | 109 | 785 034 |
 | multi-shot: every Pythagorean triple to 30 — 4 959 copies, 5 456 dead ends | 4 752 | 4 449 170 |
-| as data on `Machine`: 1000 gets and puts / every triple to 30 | 62 / 411 | 425 568 / 2 222 640 |
-| as data on `Direct`: the same | 59 / 2 699 | 573 013 / 6 224 097 |
+| as data on `Machine`: 1000 gets and puts / every triple to 30 | 34 / 287 | 425 568 / 2 222 640 |
+| as data on `Direct`: the same | 58 / 2 693 | 573 011 / 6 224 097 |
 | a failure, the rest dropped and unwound | 779 | 1 000 152 |
 
-Data costs what data costs: a node and a closure a step — 40 times an interface call. Multi-shot is where it pays:
-the machine's `k` is data, nothing copied, ten times faster than copying frames.
+Data costs what data costs: a node and a closure a step — twenty times an interface call. Multi-shot is where it
+pays: the machine's `k` is data, nothing copied, seventeen times faster than copying frames.
 
 A handler in place costs what an interface call costs — the same programs take 16–36 µs on okay-scala's machine. A
 `shift` costs about 280 bytes; a failure, its exception thrown through the body.

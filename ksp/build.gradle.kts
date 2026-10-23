@@ -10,3 +10,14 @@ kotlin {
 }
 
 dependencies { implementation("com.google.devtools.ksp:symbol-processing-api:2.3.12") }
+
+java { withSourcesJar() }
+
+publishing {
+    publications {
+        create<MavenPublication>("ksp") {
+            from(components["java"])
+            artifactId = "okay-kotlin-ksp"
+        }
+    }
+}
