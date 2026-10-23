@@ -32,8 +32,12 @@ kotlin {
 
 tasks.withType<Test> { jvmArgs("-Xss512k", "--add-opens", "java.base/java.util=ALL-UNNAMED") }
 
-// the artifacts are okay-kotlin, okay-kotlin-jvm, okay-kotlin-js, ...: the module's name is core
+// the artifacts are okay-kotlin, okay-kotlin-jvm, okay-kotlin-js, ...: the module's name is core — and so are their
+// files, whose names a build that uses them keeps
 publishing {
     publications.withType<MavenPublication>().configureEach { artifactId = artifactId.replace("core", "okay-kotlin") }
+}
+tasks.withType<AbstractArchiveTask>().configureEach {
+    archiveBaseName.set(archiveBaseName.get().replace("core", "okay-kotlin"))
 }
 
