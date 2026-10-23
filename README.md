@@ -159,8 +159,10 @@ with(Direct)  { run(either<_, String, _, _> { fail -> state(0) { context(lift(fa
 
 Handlers come in okay-scala's shapes — `General` (`k`, any number of times), `Tail` (answered in place), `Abort` (the
 rest dropped), `Stateful` (in place, a state of its own) — and the standard ones are written once, for both:
-`state`, `reader`, `writer`, `either`, `all`, `first`, `take`. `EffectsTck` holds every engine to the same answers;
-`SpecTck` runs the paper's EFF state (Fig. 10) on both.
+`state`, `reader`, `writer`, `either`, `all`, `first`, `take`. A program moves between rows by a renaming,
+`p.into(sub)` or `p.lifted()`; `intercept(at, p, h)` handles an effect's operations in the row they are in, and on it
+are built `observe`, `around`, `local`, `listen`, `censor` — okay-scala's. `EffectsTck` and `RenamingTck` hold every
+engine to the same answers; `SpecTck` runs the paper's EFF state (Fig. 10) on both.
 
 ## Interception: control and audit
 
@@ -278,7 +280,7 @@ JMH on the JVM, `./gradlew :bench:jmh`, 1000 operations a run, µs per run, lowe
 | shift: the rest taken and resumed by the handler right outside | 32 | 271 600 |
 | shift across three delimiting handlers | 109 | 785 034 |
 | multi-shot: every Pythagorean triple to 30 — 4 959 copies, 5 456 dead ends | 4 752 | 4 449 170 |
-| as data on `Machine`: 1000 gets and puts / every triple to 30 | 62 / 411 | 668 673 / 3 214 168 |
+| as data on `Machine`: 1000 gets and puts / every triple to 30 | 62 / 411 | 425 568 / 2 222 640 |
 | as data on `Direct`: the same | 59 / 2 699 | 573 013 / 6 224 097 |
 | a failure, the rest dropped and unwound | 779 | 1 000 152 |
 

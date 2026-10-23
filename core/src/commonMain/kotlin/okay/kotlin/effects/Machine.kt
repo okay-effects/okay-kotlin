@@ -18,6 +18,8 @@ object Machine : Effects<Machine> {
     override fun <E, R, Rest, A, B> handle(body: Prog<Machine, R, A>, at: Place<E, R, Rest>,
                                            h: Handler<Machine, E, Rest, A, B>): Prog<Machine, Rest, B> =
         Node.Handle(body.node(), at, h)
+    override fun <R, S, A> embed(p: Prog<Machine, R, A>, sub: Sub<R, S>): Prog<Machine, S, A> =
+        Node.Remap(p.node(), sub)
 
     override fun <A> run(p: Prog<Machine, Nil, A>): A {
         var turn: Turn<A> = Running(p.node(), Frames.End(), Levels.Top())
@@ -42,37 +44,52 @@ private class Done<Z>(val value: Z) : Turn<Z>() {
 }
 
 private class Running<R, X, V, Z>(val c: Node<R, X>, val σ: Frames<R, X, V>, val κ: Levels<R, V, Z>) : Turn<Z>() {
-    override fun next(): Turn<Z> = c.step(σ, κ)
+    override fun next(): Turn<Z> = c.step(σ, κ, FUEL)
 }
+
+/** how many steps a step takes by calling the next before it returns to the loop: no allocation of a turn for them,
+ * and a stack no deeper than this */
+private const val FUEL = 32
+
+/** the next step: taken now, while there is fuel; given back to the loop as a turn, when not */
+private fun <R, X, V, Z> go(c: Node<R, X>, σ: Frames<R, X, V>, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> =
+    if (fuel > 0) c.step(σ, κ, fuel - 1) else Running(c, σ, κ)
 
 /** C: the program in control */
 private sealed class Node<R, out A> : Prog<Machine, R, A>() {
-    abstract fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>): Turn<Z>
+    abstract fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>, fuel: Int): Turn<Z>
 
     class Value<R, out A>(val a: A) : Node<R, A>() {
-        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>): Turn<Z> = σ.ret(a, κ)
+        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> = σ.ret(a, κ, fuel)
     }
 
     class Bind<R, X, out A>(val p: Node<R, X>, val f: (X) -> Prog<Machine, R, A>) : Node<R, A>() {
-        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>): Turn<Z> =
-            Running(p, Frames.Bind(f, σ), κ)
+        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> =
+            go(p, Frames.Bind(f, σ), κ, fuel)
     }
 
     class Defer<R, out A>(val make: () -> Prog<Machine, R, A>) : Node<R, A>() {
-        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>): Turn<Z> = Running(make().node(), σ, κ)
+        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> =
+            go(make().node(), σ, κ, fuel)
     }
 
     /** an operation: out to its handler, level by level, the levels crossed kept */
     class Perform<R, A>(val at: At<R, A>) : Node<R, A>() {
-        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>): Turn<Z> =
-            κ.perform(at, σ, Crossed.None())
+        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> =
+            κ.perform(at, σ, Crossed.None(), fuel)
     }
 
     /** a handled body: a level of its own, the frames outside it kept with it */
     class Handle<E, R0, A0, R, A>(val body: Node<R0, A0>, val at: Place<E, R0, R>,
                                   val h: Handler<Machine, E, R, A0, A>) : Node<R, A>() {
-        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>): Turn<Z> =
-            Running(body, Frames.End(), Levels.Handled(at, h.live(), σ, κ))
+        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> =
+            go(body, Frames.End(), Levels.Handled(at, h.live(), σ, κ), fuel)
+    }
+
+    /** a program of `R0` where the row is `R`: a level renaming its operations */
+    class Remap<R0, R, A>(val p: Node<R0, A>, val sub: Sub<R0, R>) : Node<R, A>() {
+        override fun <V, Z> step(σ: Frames<R, A, V>, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> =
+            go(p, Frames.End(), Levels.Renaming(sub, σ, κ), fuel)
     }
 
     /** `k` resumed with `x`: the frames inside and the levels crossed put back, its handler again around them, on
@@ -81,33 +98,34 @@ private sealed class Node<R, out A> : Prog<Machine, R, A>() {
         val x: X, val inner: Frames<R0, X, V0>, val crossed: Crossed<R0, V0, R, A>,
         val at: Place<E, R, Rest>, val h: Live<Machine, E, Rest, A, B>,
     ) : Node<Rest, B>() {
-        override fun <V, Z> step(σ: Frames<Rest, B, V>, κ: Levels<Rest, V, Z>): Turn<Z> =
-            Running(Value(x), inner, crossed.put(Levels.Handled(at, h, σ, κ)))
+        override fun <V, Z> step(σ: Frames<Rest, B, V>, κ: Levels<Rest, V, Z>, fuel: Int): Turn<Z> =
+            inner.ret(x, crossed.put(Levels.Handled(at, h, σ, κ)), fuel)
     }
 }
 
 /** K, inside a level: the binds of the body, from an `X` to the body's value `V` */
 private sealed class Frames<R, in X, V> {
-    abstract fun <Z> ret(x: X, κ: Levels<R, V, Z>): Turn<Z>
+    abstract fun <Z> ret(x: X, κ: Levels<R, V, Z>, fuel: Int): Turn<Z>
 
     class End<R, V> : Frames<R, V, V>() {
-        override fun <Z> ret(x: V, κ: Levels<R, V, Z>): Turn<Z> = κ.ret(x)
+        override fun <Z> ret(x: V, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> = κ.ret(x, fuel)
     }
 
     class Bind<R, X, Y, V>(val f: (X) -> Prog<Machine, R, Y>, val rest: Frames<R, Y, V>) : Frames<R, X, V>() {
-        override fun <Z> ret(x: X, κ: Levels<R, V, Z>): Turn<Z> = Running(f(x).node(), rest, κ)
+        override fun <Z> ret(x: X, κ: Levels<R, V, Z>, fuel: Int): Turn<Z> = go(f(x).node(), rest, κ, fuel)
     }
 }
 
 /** K, the levels: the handlers around a body of the row `R` whose value is a `V`, up to the run's `Z` */
 private sealed class Levels<R, V, Z> {
-    abstract fun ret(v: V): Turn<Z>
-    abstract fun <X, R0, V0> perform(at: At<R, X>, inner: Frames<R0, X, V0>, crossed: Crossed<R0, V0, R, V>): Turn<Z>
+    abstract fun ret(v: V, fuel: Int): Turn<Z>
+    abstract fun <X, R0, V0> perform(at: At<R, X>, inner: Frames<R0, X, V0>, crossed: Crossed<R0, V0, R, V>,
+                                     fuel: Int): Turn<Z>
 
     class Top<Z> : Levels<Nil, Z, Z>() {
-        override fun ret(v: Z): Turn<Z> = Done(v)
+        override fun ret(v: Z, fuel: Int): Turn<Z> = Done(v)
         override fun <X, R0, V0> perform(at: At<Nil, X>, inner: Frames<R0, X, V0>,
-                                         crossed: Crossed<R0, V0, Nil, Z>): Turn<Z> =
+                                         crossed: Crossed<R0, V0, Nil, Z>, fuel: Int): Turn<Z> =
             error("an operation of no effect: the row is empty")
     }
 
@@ -115,21 +133,30 @@ private sealed class Levels<R, V, Z> {
         val at: Place<E, R, Rest>, val h: Live<Machine, E, Rest, A, B>,
         val outside: Frames<Rest, B, W>, val up: Levels<Rest, W, Z>,
     ) : Levels<R, A, Z>() {
-        override fun ret(v: A): Turn<Z> = Running(h.value(v).node(), outside, up)
+        override fun ret(v: A, fuel: Int): Turn<Z> = go(h.value(v).node(), outside, up, fuel)
 
         override fun <X, R0, V0> perform(at: At<R, X>, inner: Frames<R0, X, V0>,
-                                         crossed: Crossed<R0, V0, R, A>): Turn<Z> =
+                                         crossed: Crossed<R0, V0, R, A>, fuel: Int): Turn<Z> =
             when (val taken = this.at.take(at)) {
                 is Taken.Mine -> when (val h = h) {
-                    is Tail -> Running(Node.Value(h.answer(taken.op)), inner, crossed.put(this))
-                    is Abort -> Running(h.abort(taken.op).node(), outside, up)
+                    is Tail -> inner.ret(h.answer(taken.op), crossed.put(this), fuel)
+                    is Abort -> go(h.abort(taken.op).node(), outside, up, fuel)
                     is General -> {
                         val k = { x: X -> Node.Resume(x, inner, crossed, this.at, h) }
-                        Running(h.op(taken.op, k).node(), outside, up)
+                        go(h.op(taken.op, k).node(), outside, up, fuel)
                     }
                 }
-                is Taken.Theirs -> up.perform(taken.op, inner, Crossed.Level(crossed, this.at, h, outside))
+                is Taken.Theirs -> up.perform(taken.op, inner, Crossed.Level(crossed, this.at, h, outside), fuel)
             }
+    }
+
+    /** a level renaming: the operations of the body's row `R0` renamed into `R` on their way out */
+    class Renaming<R0, R, A, W, Z>(val sub: Sub<R0, R>, val outside: Frames<R, A, W>, val up: Levels<R, W, Z>) :
+        Levels<R0, A, Z>() {
+        override fun ret(v: A, fuel: Int): Turn<Z> = outside.ret(v, up, fuel)
+        override fun <X, R1, V1> perform(at: At<R0, X>, inner: Frames<R1, X, V1>,
+                                         crossed: Crossed<R1, V1, R0, A>, fuel: Int): Turn<Z> =
+            up.perform(sub.rename(at), inner, Crossed.Renamed(crossed, sub, outside), fuel)
     }
 }
 
@@ -140,6 +167,11 @@ private sealed class Crossed<R0, V0, R, V> {
 
     class None<R, V> : Crossed<R, V, R, V>() {
         override fun <Z> put(κ: Levels<R, V, Z>): Levels<R, V, Z> = κ
+    }
+
+    class Renamed<R0, V0, R1, R, A, W>(val inner: Crossed<R0, V0, R1, A>, val sub: Sub<R1, R>,
+                                       val outside: Frames<R, A, W>) : Crossed<R0, V0, R, W>() {
+        override fun <Z> put(κ: Levels<R, W, Z>): Levels<R0, V0, Z> = inner.put(Levels.Renaming(sub, outside, κ))
     }
 
     class Level<R0, V0, E, R, Rest, A, B, W>(

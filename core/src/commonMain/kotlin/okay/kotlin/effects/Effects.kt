@@ -69,6 +69,8 @@ interface Effects<F> {
     /** `E` handled from its place in the body's row, deeply */
     fun <E, R, Rest, A, B> handle(body: Prog<F, R, A>, at: Place<E, R, Rest>, h: Handler<F, E, Rest, A, B>):
         Prog<F, Rest, B>
+    /** a program of `R` where the row is `S`, its operations renamed on their way out */
+    fun <R, S, A> embed(p: Prog<F, R, A>, sub: Sub<R, S>): Prog<F, S, A>
     /** a program of no effect left, run */
     fun <A> run(p: Prog<F, Nil, A>): A
 }
@@ -102,6 +104,24 @@ fun <F, R, S, A> loop(init: S, step: (S) -> Prog<F, R, Next<S, A>>): Prog<F, R, 
         is Next.Done -> fx.pure(it.value)
     }
 }
+
+/** this program, where the row is `S` */
+context(fx: Effects<F>)
+fun <F, R, S, A> Prog<F, R, A>.into(sub: Sub<R, S>): Prog<F, S, A> = fx.embed(this, sub)
+
+/** this program inside a handler of `G` it does not see: its operations past it */
+context(fx: Effects<F>)
+fun <F, G, R, A> Prog<F, R, A>.lifted(): Prog<F, With<G, R>, A> = fx.embed(this, Sub.Inner())
+
+/**
+ * `E`'s operations in `p` handled by `h`, in the row they are in: `h` sees each first, and passes it on — performs it
+ * again, to the handler of `E` outside — or not. okay-scala's `intercept`: `p` with `E` once more inside it, handled.
+ */
+context(fx: Effects<F>)
+fun <F, E, R, A, B> intercept(at: In<E, R>, p: Prog<F, R, A>, h: Handler<F, E, R, A, B>): Prog<F, R, B> =
+    fx.handle(fx.embed(p, interposing(at)), Place.Last(), h)
+
+private fun <E, R, Rest> interposing(at: Place<E, R, Rest>): Sub<R, With<E, R>> = Sub.Interposing(at)
 
 /** a loop's next step: again from a state, or done with a value */
 sealed interface Next<out S, out A> {

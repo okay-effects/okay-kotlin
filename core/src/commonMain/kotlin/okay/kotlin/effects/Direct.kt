@@ -21,6 +21,7 @@ object Direct : Effects<Direct> {
     override fun <E, R, Rest, A, B> handle(body: Prog<Direct, R, A>, at: Place<E, R, Rest>,
                                            h: Handler<Direct, E, Rest, A, B>): Prog<Direct, Rest, B> =
         D.Handle(body.d(), at, h)
+    override fun <R, S, A> embed(p: Prog<Direct, R, A>, sub: Sub<R, S>): Prog<Direct, S, A> = D.Remap(p.d(), sub)
 
     override fun <A> run(p: Prog<Direct, Nil, A>): A = runEffects { eval(p.d(), Handlers.None) }
 }
@@ -88,6 +89,12 @@ private sealed class D<R, out A> : Prog<Direct, R, A>() {
                                   val h: Handler<Direct, E, R, A0, A>) : D<R, A>() {
         override suspend fun <Z> step(σ: DFrames<R, A, Z>, handlers: Handlers<R>): DState<R, Z> =
             σ.ret(handled(body, at, h.live(), handlers))
+    }
+
+    /** a program of `R0` where the row is `R`: run with the handlers of `R`, seen as `R0`'s */
+    class Remap<R0, R, A>(val p: D<R0, A>, val sub: Sub<R0, R>) : D<R, A>() {
+        override suspend fun <Z> step(σ: DFrames<R, A, Z>, handlers: Handlers<R>): DState<R, Z> =
+            σ.ret(eval(p, sub.handlers(handlers)))
     }
 
     /** `k` resumed: a copy of the rest where one can be made, so `k` can be resumed again; the rest itself where not */

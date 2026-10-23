@@ -180,6 +180,17 @@ a level its operation — each knowing its own types, so the machine has no cast
 `Crossed`; at its handler `k` is a node that puts them back on whatever is outside when it is resumed. Deep,
 multi-shot, a loop — on every platform.
 
+**Renamings.** A program of one row runs in another by a `Sub<R, S>`: each operation renamed on its way out, and the
+handlers of `S` seen as a row of `R`'s. On the machine a renaming is a level, crossed like a handler's and put back
+with `k`; on Direct, the row of handler objects rebuilt. `intercept` is a renaming and a handler: the program with its
+effect once more inside (`Interposing`), that one handled in the same row — the handler sees each operation and may
+perform it again, to the one outside. `observe` and `around` take the place of the effect they intercept as an
+argument: a context may hold places of several effects, and which is meant is not guessed.
+
+**Fuel.** The machine's steps return the next turn to its loop; that is an allocation a step. A step instead takes
+the next one by calling it, 32 deep, before it gives a turn back: the stack stays bounded, a third of the allocation
+goes.
+
 **Direct** runs the same programs on okay-kotlin's continuations: binds in a loop, the row's handlers objects, found
 at their places ([`Handlers`]). A handler in place (`Tail`, `Stateful`) is a call; one taking the rest a prompt, `k`
 the coroutine's rest, copied for each resumption where a copy can be made — not across another prompt, where it is

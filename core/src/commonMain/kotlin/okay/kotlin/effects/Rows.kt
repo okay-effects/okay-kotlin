@@ -37,6 +37,10 @@ sealed interface Place<E, R, Rest> {
     fun find(handlers: Handlers<R>): Handling<E>
     /** a row of handlers outside, with `E`'s put at this place */
     fun put(outside: Handlers<Rest>, handling: Handling<E>): Handlers<R>
+    /** an operation of the row without `E`, back in the row: the way `take`'s `Theirs` came */
+    fun <X> back(op: At<Rest, X>): At<R, X>
+    /** the row's handlers, `E`'s at this place replaced */
+    fun replace(handlers: Handlers<R>, handling: Handling<E>): Handlers<R>
 
     /** the last effect of `With<E, R>` */
     class Last<E, R> : Place<E, With<E, R>, R> {
@@ -51,6 +55,12 @@ sealed interface Place<E, R, Rest> {
         }
         override fun put(outside: Handlers<R>, handling: Handling<E>): Handlers<With<E, R>> =
             Handlers.Slot(handling, outside)
+        override fun <X> back(op: At<R, X>): At<With<E, R>, X> = At.Init(op)
+        override fun replace(handlers: Handlers<With<E, R>>, handling: Handling<E>): Handlers<With<E, R>> =
+            when (handlers) {
+                is Handlers.Slot -> Handlers.Slot(handling, handlers.outside)
+                else -> error("no handler at the last place")
+            }
     }
 
     /** one further out than the last, `G` */
@@ -72,6 +82,60 @@ sealed interface Place<E, R, Rest> {
                 is Handlers.Slot -> Handlers.Slot(outside.handling, inner.put(outside.outside, handling))
                 else -> error("no handler further out")
             }
+        override fun <X> back(op: At<With<G, Rest>, X>): At<With<G, R>, X> = when (op) {
+            is At.Last -> At.Last(op.op)
+            is At.Init -> At.Init(inner.back(op.op))
+        }
+        override fun replace(handlers: Handlers<With<G, R>>, handling: Handling<E>): Handlers<With<G, R>> =
+            when (handlers) {
+                is Handlers.Slot -> Handlers.Slot(handlers.handling, inner.replace(handlers.outside, handling))
+                else -> error("no handler further out")
+            }
+    }
+}
+
+/**
+ * A RENAMING of the row `R` into `S`: a program of `R` run where the row is `S` (`into`) — each operation of `R`
+ * renamed into `S` on its way out, and the handlers of `S` seen by it as a row of `R`'s. okay-scala's `Sub`.
+ */
+interface Sub<R, S> {
+    fun <X> rename(op: At<R, X>): At<S, X>
+    fun handlers(of: Handlers<S>): Handlers<R>
+
+    /** no effect, into any row */
+    class Empty<S> : Sub<Nil, S> {
+        override fun <X> rename(op: At<Nil, X>): At<S, X> = error("an operation of no effect")
+        override fun handlers(of: Handlers<S>): Handlers<Nil> = Handlers.None
+    }
+
+    /** `E` at its place in `S`, and the rest of the row by `rest` */
+    class Cons<E, R, S>(val at: In<E, S>, val rest: Sub<R, S>) : Sub<With<E, R>, S> {
+        override fun <X> rename(op: At<With<E, R>, X>): At<S, X> = when (op) {
+            is At.Last -> at.inject(op.op)
+            is At.Init -> rest.rename(op.op)
+        }
+        override fun handlers(of: Handlers<S>): Handlers<With<E, R>> = Handlers.Slot(at.find(of), rest.handlers(of))
+    }
+
+    /** the row with one more effect inside it, `G`, which the program does not see */
+    class Inner<G, R> : Sub<R, With<G, R>> {
+        override fun <X> rename(op: At<R, X>): At<With<G, R>, X> = At.Init(op)
+        override fun handlers(of: Handlers<With<G, R>>): Handlers<R> = when (of) {
+            is Handlers.Slot -> of.outside
+            else -> error("no handler inside")
+        }
+    }
+
+    /** `E` once more, inside: its operations to the new one, the rest's where they were — what `intercept` runs in */
+    class Interposing<E, R, Rest>(val at: Place<E, R, Rest>) : Sub<R, With<E, R>> {
+        override fun <X> rename(op: At<R, X>): At<With<E, R>, X> = when (val taken = at.take(op)) {
+            is Taken.Mine -> At.Last(taken.op)
+            is Taken.Theirs -> At.Init(at.back(taken.op))
+        }
+        override fun handlers(of: Handlers<With<E, R>>): Handlers<R> = when (of) {
+            is Handlers.Slot -> at.replace(of.outside, of.handling)
+            else -> error("no handler inside")
+        }
     }
 }
 
