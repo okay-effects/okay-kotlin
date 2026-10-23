@@ -35,7 +35,7 @@
       ],
       "files": [
         {
-          "name": "core-linuxX64Main-0.1.0.klib",
+          "name": "okay-kotlin-linuxX64Main-0.1.0.klib",
           "url": "okay-kotlin-linuxx64-0.1.0.klib",
           "size": 136223,
           "sha512": "f2b3eb04a8b4390ad8de6a0a1e1a1108c93238a2f1362a1fa444b83107d32a7fd2de8f3feae1ce706e6bf4cfbad2fa972f5eb1ba3f3540cdd14177560ca1d9f3",
@@ -58,7 +58,7 @@
       },
       "files": [
         {
-          "name": "core-linuxx64-0.1.0-sources.jar",
+          "name": "okay-kotlin-linuxx64-0.1.0-sources.jar",
           "url": "okay-kotlin-linuxx64-0.1.0-sources.jar",
           "size": 25106,
           "sha512": "ac6b02c055455bd951d6f353764f1ab5f946da9e8d90f6cc768a62b931efaaac49f77a70a546098f8084170d350f64133791e434e4920cc60ad6bc51513908d0",

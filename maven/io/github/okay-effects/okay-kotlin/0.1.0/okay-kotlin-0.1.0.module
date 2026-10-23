@@ -33,7 +33,7 @@
       ],
       "files": [
         {
-          "name": "core-metadata-0.1.0.jar",
+          "name": "okay-kotlin-metadata-0.1.0.jar",
           "url": "okay-kotlin-0.1.0.jar",
           "size": 21688,
           "sha512": "55343858b7d944ee359e33bca53442352bd630c3bd3acfa6ecbeea83c4e2a03c07cb5780607f74e9a61a2e913bfc8d8be0d000c2899d99e924649a3f08f8cce8",
@@ -55,7 +55,7 @@
       },
       "files": [
         {
-          "name": "core-kotlin-0.1.0-sources.jar",
+          "name": "okay-kotlin-kotlin-0.1.0-sources.jar",
           "url": "okay-kotlin-0.1.0-sources.jar",
           "size": 25106,
           "sha512": "1056c16d8c97009a9bb9edfecffd185f3e356dc9497b6f0dc6c522573cd4fc9526a8473f71d4cea829147ecf40aa45f5fe459a0af611458b47f5a004c5f551a3",

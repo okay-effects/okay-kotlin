@@ -35,7 +35,7 @@
       ],
       "files": [
         {
-          "name": "core-macosArm64Main-0.1.0.klib",
+          "name": "okay-kotlin-macosArm64Main-0.1.0.klib",
           "url": "okay-kotlin-macosarm64-0.1.0.klib",
           "size": 136235,
           "sha512": "edb1160e3cef0c501f28d8626a99275c72a896b20b95920d4aa98b122914d566e279a36fff054db4584554093890735b20dbaf1698510d89a838567416363750",
@@ -58,7 +58,7 @@
       },
       "files": [
         {
-          "name": "core-macosarm64-0.1.0-sources.jar",
+          "name": "okay-kotlin-macosarm64-0.1.0-sources.jar",
           "url": "okay-kotlin-macosarm64-0.1.0-sources.jar",
           "size": 25106,
           "sha512": "ac6b02c055455bd951d6f353764f1ab5f946da9e8d90f6cc768a62b931efaaac49f77a70a546098f8084170d350f64133791e434e4920cc60ad6bc51513908d0",
@@ -88,7 +88,7 @@
       ],
       "files": [
         {
-          "name": "core-macosarm64-0.1.0-metadata.jar",
+          "name": "okay-kotlin-macosarm64-0.1.0-metadata.jar",
           "url": "okay-kotlin-macosarm64-0.1.0-metadata.jar",
           "size": 261,
           "sha512": "1487e5a20c9e4d74f298e07c42e96a61be11b7a768c3fbc199ee138cd68e1fc2267d1cfe3f11f288acc05df755315344d052cc5f6f751f126ab4fe1caa5125ea",

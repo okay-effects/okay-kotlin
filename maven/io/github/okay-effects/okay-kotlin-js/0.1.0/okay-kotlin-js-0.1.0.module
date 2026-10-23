@@ -42,7 +42,7 @@
       ],
       "files": [
         {
-          "name": "core-js-0.1.0.klib",
+          "name": "okay-kotlin-js-0.1.0.klib",
           "url": "okay-kotlin-js-0.1.0.klib",
           "size": 131925,
           "sha512": "d5600d9ab2ba60396d38938635e68698a21cf26197217c505dbd0bf62a40106b429afb8325c77ba88f40f1da502a494c671999d2b4ba9e4c99bf0c242226b3b6",
@@ -79,7 +79,7 @@
       ],
       "files": [
         {
-          "name": "core-js-0.1.0.klib",
+          "name": "okay-kotlin-js-0.1.0.klib",
           "url": "okay-kotlin-js-0.1.0.klib",
           "size": 131925,
           "sha512": "d5600d9ab2ba60396d38938635e68698a21cf26197217c505dbd0bf62a40106b429afb8325c77ba88f40f1da502a494c671999d2b4ba9e4c99bf0c242226b3b6",
@@ -102,7 +102,7 @@
       },
       "files": [
         {
-          "name": "core-js-0.1.0-sources.jar",
+          "name": "okay-kotlin-js-0.1.0-sources.jar",
           "url": "okay-kotlin-js-0.1.0-sources.jar",
           "size": 25907,
           "sha512": "5364c86d950409276381f008c00fa4e1b2113e74d528cca456646c9a1b689c60472ac9359ee05abf301daeaeb3a3dd09a73ff526b86bdf8a4a356bce7ead79b8",

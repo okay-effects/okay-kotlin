@@ -35,7 +35,7 @@
       ],
       "files": [
         {
-          "name": "core-jvm-0.1.0.jar",
+          "name": "okay-kotlin-jvm-0.1.0.jar",
           "url": "okay-kotlin-jvm-0.1.0.jar",
           "size": 342729,
           "sha512": "38311651244407a73f7bb2bf3e457543556358e027ae4881ca7d0958520e2799b5e27938bfa6c120222033fc99642f1f8229d850b5e919e2dc78c6984cce8040",
@@ -65,7 +65,7 @@
       ],
       "files": [
         {
-          "name": "core-jvm-0.1.0.jar",
+          "name": "okay-kotlin-jvm-0.1.0.jar",
           "url": "okay-kotlin-jvm-0.1.0.jar",
           "size": 342729,
           "sha512": "38311651244407a73f7bb2bf3e457543556358e027ae4881ca7d0958520e2799b5e27938bfa6c120222033fc99642f1f8229d850b5e919e2dc78c6984cce8040",
@@ -88,7 +88,7 @@
       },
       "files": [
         {
-          "name": "core-jvm-0.1.0-sources.jar",
+          "name": "okay-kotlin-jvm-0.1.0-sources.jar",
           "url": "okay-kotlin-jvm-0.1.0-sources.jar",
           "size": 26428,
           "sha512": "c157f501cf3b0c3e8878f6a17508bec5487d86f34d6f9bb295860bc6a5369b01bbe598ce6d7bf4284058836997e3269845b469abc5d9d9c5f22dc6b704b5207b",
