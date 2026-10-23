@@ -34,6 +34,14 @@ interface Resume<in X, out R> {
     /** the rest dropped, and unwound: [Abandoned] thrown at the operation, so its `finally` blocks run — OCaml's
      * `discontinue`. A rest neither resumed nor dropped is left as it is, its `finally` blocks not run */
     suspend fun drop()
+
+    /**
+     * A COPY OF THE REST as it is now, resumed apart from this one: multi-shot. Taken before this one is resumed — the
+     * rest's frames are copied, its locals and its loops' iterators with them; what else they point to on the heap
+     * is shared, as a handler that answers in place is (its state is one for every copy). On the JVM and JavaScript;
+     * not across a handler that delimits its body (`handle`) — put the copying handler inside it.
+     */
+    fun copy(): Resume<X, R>
 }
 
 /** thrown at the operation whose rest was dropped ([Resume.drop], [abort]): the body unwinds, its `finally` blocks run
@@ -44,6 +52,9 @@ open class Abandoned internal constructor() : CancellationException("the rest of
 /** an [Abandoned] made as cheaply as the platform can */
 internal expect fun abandoned(): Abandoned
 
+/** the frames of `k` up to `root`, copied: a continuation of its own, from the same point */
+internal expect fun <X> copyFrames(k: Continuation<X>, root: Continuation<*>): Continuation<X>
+
 /**
  * THE BODY, DELIMITED: `body` given its prompt, run; what it gives, or what a [shift] to the prompt makes of the rest.
  * Handlers are made of this: an effect's implementation closing over the prompt, given to the body as its context.
@@ -52,7 +63,7 @@ suspend fun <R> handle(body: suspend (Prompt<R>) -> R): R {
     val prompt = Prompt<R>()
     val machine = Machine(prompt, coroutineContext)
     prompt.machine = machine
-    val run = body.createCoroutineUnintercepted(prompt, Continuation(machine.outer + machine.body) { machine.done(it) })
+    val run = body.createCoroutineUnintercepted(prompt, machine.root)
     return machine.drive { run.resume(Unit) }
 }
 
@@ -62,10 +73,14 @@ suspend fun <R> handle(body: suspend (Prompt<R>) -> R): R {
  * the handler around it again; `k.drop()` unwinds it. `f` runs outside the body, where the handler is: an operation of
  * its own effect there goes to the handler further out.
  */
-suspend fun <X, R> Prompt<R>.shift(f: suspend (k: Resume<X, R>) -> R): X =
+suspend fun <X, R> Prompt<R>.shift(f: suspend (k: Resume<X, R>) -> R): X = shift(f, relayed = false)
+
+/** `relayed`: the operation came through a handler that delimits its body — its frames are in the rest */
+private suspend fun <X, R> Prompt<R>.shift(f: suspend (k: Resume<X, R>) -> R, relayed: Boolean): X =
     suspendCoroutineUninterceptedOrReturn { k ->
         val inner = k.context[Running] ?: error("shift outside its handler's body")
-        if (inner === machine.body) machine.operation(Op(f, k)) else inner.relay(Relay({ shift(f) }, k))
+        if (inner === machine.body) machine.operation(Op(f, k, relayed))
+        else inner.relay(Relay({ shift(f, relayed = true) }, k))
         COROUTINE_SUSPENDED
     }
 
@@ -88,7 +103,7 @@ fun <A> runEffects(body: suspend () -> A): A {
 // ---- THE MACHINE: one per handled body, a loop driving the body and its handler's clauses as coroutines
 
 /** an operation for this prompt: the clause `f`, the body's continuation `k` */
-internal class Op<X, R>(val f: suspend (Resume<X, R>) -> R, val k: Continuation<X>)
+internal class Op<X, R>(val f: suspend (Resume<X, R>) -> R, val k: Continuation<X>, val relayed: Boolean)
 
 /** a suspension aimed further out than the loop it reached: done again by that loop, in its own frame, where it
  * reaches the next loop out; its answer, or its failure, brought back */
@@ -125,6 +140,8 @@ internal sealed class Waker {
  */
 internal class Machine<R>(private val prompt: Prompt<R>, val outer: CoroutineContext) {
     val body = Running(this)
+    /** where the body's frames end: a copy of the rest copies them up to here */
+    val root: Continuation<R> = Continuation(outer + body) { done(it) }
     private val clauses = Running(this)
     private var result: Result<R>? = null
     private var op: Op<*, R>? = null
@@ -203,7 +220,7 @@ internal class Machine<R>(private val prompt: Prompt<R>, val outer: CoroutineCon
     }
 
     private fun <X> start(o: Op<X, R>) {
-        val k = Rest(o.k)
+        val k = Rest(o.k, o.relayed)
         o.f.createCoroutineUnintercepted(k, Continuation(outer + clauses) { done(it) }).resume(Unit)
     }
 
@@ -212,10 +229,20 @@ internal class Machine<R>(private val prompt: Prompt<R>, val outer: CoroutineCon
      * drives the machine — after its clause, after `handle` returned — a loop starts there. Resumed inside another
      * handler's body, in a clause: relayed out to the clause's loop.
      */
-    private inner class Rest<X>(private val k: Continuation<X>) : Resume<X, R> {
+    private inner class Rest<X>(private val k: Continuation<X>, private val relayed: Boolean) : Resume<X, R> {
         private var used = false
 
         override suspend fun invoke(x: X): R = resume(Result.success(x))
+
+        override fun copy(): Resume<X, R> {
+            check(!used) { "a continuation copied after it was resumed: copy it first" }
+            // a delimiting handler's frames are in the rest: copied, its machine would be one for both copies
+            check(!relayed) {
+                "a continuation cannot be copied across a handler that delimits its body: " +
+                    "put the copying handler inside it"
+            }
+            return Rest(copyFrames(k, root), false)
+        }
 
         override suspend fun drop() {
             try {

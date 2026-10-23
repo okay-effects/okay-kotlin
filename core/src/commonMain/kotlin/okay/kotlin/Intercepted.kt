@@ -24,6 +24,12 @@ fun Abort.intercepted(interceptor: Interceptor): Abort =
 fun <O> Emit<O>.intercepted(interceptor: Interceptor): Emit<O> =
     Emit { o -> interceptor.around(Operation("Emit", "emit", listOf(o))) { emit(o) } }
 
+fun Choose.intercepted(interceptor: Interceptor): Choose = object : Choose {
+    val inner = this@intercepted
+    override suspend fun <X> among(xs: List<X>): X =
+        interceptor.around(Operation("Choose", "among", listOf(xs))) { inner.among(xs) }
+}
+
 fun Fresh.intercepted(interceptor: Interceptor): Fresh =
     Fresh { interceptor.around(Operation("Fresh", "next", emptyList())) { next() } }
 

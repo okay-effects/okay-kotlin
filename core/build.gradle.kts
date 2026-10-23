@@ -9,6 +9,8 @@ val platforms = (findProperty("platforms") as String? ?: "jvm").split(',').map {
 
 kotlin {
     jvmToolchain(21)
+    // the default hierarchy (nativeMain for every native target), kept with a source set of our own besides
+    applyDefaultHierarchyTemplate()
     jvm()
     if ("js" in platforms) js { nodejs() }
     if ("native" in platforms) { macosArm64(); linuxX64() }
@@ -21,7 +23,11 @@ kotlin {
     sourceSets {
         commonTest.dependencies { implementation(kotlin("test")) }
         jvmTest.dependencies { implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2") }
+        // multi-shot: a continuation copied, on the JVM and JavaScript (native has no way to copy a frame)
+        val jvmAndJsTest by creating { dependsOn(commonTest.get()) }
+        jvmTest.get().dependsOn(jvmAndJsTest)
+        findByName("jsTest")?.dependsOn(jvmAndJsTest)
     }
 }
 
-tasks.withType<Test> { jvmArgs("-Xss512k") }
+tasks.withType<Test> { jvmArgs("-Xss512k", "--add-opens", "java.base/java.util=ALL-UNNAMED") }

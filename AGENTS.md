@@ -15,9 +15,11 @@ Read before anything else, then `docs/design.md`.
   `Interceptor.around`. The standard effects' wrappers are hand-written in `Intercepted.kt` and must look exactly like
   what `ksp/` generates for `@Effect`; a new standard effect gets its wrapper and a line in `InterceptTest`.
 - THE SPEC is Forster, Kammar, Lindley, Pretnar, ICFP 2017 (EFF, MON, DEL); `SpecTest` its examples and rules,
-  `docs/design.md#against-the-literature` the comparison. Deliberate differences: one-shot; handlers chosen
-  lexically (capabilities), not dynamically. `k` is a value: never assume it is resumed inside its clause.
-- One-shot continuations, by the platform and by the user's rule: NO REPLAY to fake multi-shot. So no `Choose.all`.
+  `docs/design.md#against-the-literature` the comparison. Deliberate differences: handlers chosen lexically
+  (capabilities), not dynamically; multi-shot only where a frame can be copied (JVM, JS). `k` is a value: never
+  assume it is resumed inside its clause.
+- Multi-shot by COPYING the rest's frames (`Resume.copy`, `Frames.jvm.kt`, `Frames.js.kt`), never by replay (the
+  user's rule). Native has none. A copy is taken before `k` is resumed; a delimiting handler between refuses it.
 - No casts, no `!!` in the library. Warnings are errors.
 - A handler's type parameters cannot be inferred from what its body asks of the context: tests and docs write
   `either<String, _> { ... }`. Do not "fix" it with overloads that guess.

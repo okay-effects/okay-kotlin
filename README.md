@@ -3,7 +3,8 @@
 Algebraic effects for Kotlin, in Kotlin's own terms: an effect is an interface of suspend functions, the effects a
 program needs are its context parameters, a handler is a function that implements the interface and runs the body
 with it. Handlers that take the rest of the body — failure, early ends, generators, your own — are delimited
-continuations on Kotlin's coroutines: deep, in constant stack, one-shot. Kotlin 2.4, JVM, JS and native; no
+continuations on Kotlin's coroutines: deep, in constant stack; multi-shot on the JVM and JavaScript, the rest's
+frames copied. Kotlin 2.4, JVM, JS and native; no
 dependency, the continuations are the standard library's. Runs inside kotlinx.coroutines as any suspend code does.
 
 The okay family's effects — [okay-simple](https://github.com/okay-effects/okay-simple),
@@ -101,6 +102,7 @@ suspend fun <A> answering(n: Int, body: suspend context(Ask) () -> A): A = handl
 | `handle { prompt -> ... }` | the body delimited: `shift` and `abort` take the rest of it up to here |
 | `prompt.shift { k -> ... }` | the rest of the body as `k`, a `Resume<X, R>`: resumed once, it gives the rest's value |
 | `k.drop()` | the rest dropped and unwound: `Abandoned` thrown where it waits, its `finally` blocks run |
+| `k.copy()` | a copy of the rest, resumed apart: multi-shot, on the JVM and JavaScript |
 | `prompt.abort(value)` | the body ends here, the handler gives `value`; the rest dropped |
 | `runEffects { ... }` | a program with every effect handled and nothing to wait for, run; otherwise `runBlocking` |
 
@@ -114,6 +116,7 @@ suspend fun <A> answering(n: Int, body: suspend context(Ask) () -> A): A = handl
 | `Fail<E>` | `raise`, `ensure`, `Either.bind()` | `either`, `recover` |
 | `Abort` | `T?.bind()` | `optional` |
 | `Emit<O>` | `emit` | `collect`, `forEach(f)`, `take(n)` |
+| `Choose` (multi-shot: JVM, JS) | `among`, `flip`, `none` | `all`, `first` |
 | `Fresh` | `fresh` | `numbered(start)` |
 | `Randomness` | `nextLong`, `nextInt`, `nextDouble` | `seeded(seed)`, `randomly(random)` |
 | `Store<K, V>` | `load`, `save`, `remove` | `inMemory(initial)` |
@@ -187,10 +190,37 @@ made by its EFF→DEL translation; its examples — state in EFF, DEL and MON �
 clause may keep it and have it resumed after it returns, after `handle` returns. `k.drop()` unwinds the rest
 (`finally` runs); `abort` drops it. [docs/design.md](docs/design.md#against-the-literature) has the comparison.
 
-## Limits
+## Multi-shot
 
-- One-shot: a Kotlin continuation is resumed once, and the library does not run a body again to fake more. Every way
-  of a choice (`Choose.all`) is not here.
+A Kotlin continuation is resumed once. `k.copy()`, taken before `k` is resumed, is another: the rest's frames — the
+objects the compiler makes of a suspend function, its locals their fields — copied up to the handler, and the
+iterators of its loops with them. Nothing runs again: the copy goes on from where the rest was. So `k` is used as
+many times as the literature's:
+
+```kotlin
+context(_: Choose)
+suspend fun triple(n: Int): Triple<Int, Int, Int> {
+    val a = among((1..n).toList())
+    val b = among((a..n).toList())
+    val c = among((b..n).toList())
+    if (a * a + b * b != c * c) none()
+    return Triple(a, b, c)
+}
+
+runEffects { all { triple(20) } }      // [(3, 4, 5), (5, 12, 13), (6, 8, 10), (8, 15, 17), (9, 12, 15), (12, 16, 20)]
+runEffects { first { queens(8) } }     // backtracking: the first way to a value, the rest not tried
+```
+
+- On the JVM and JavaScript; native code has no way to copy a frame.
+- What the frames point to on the heap is shared by the copies: a mutable list built along the way, the state of a
+  handler answering in place outside the choice. A way's own state is a local holding a value, or a handler that
+  takes the rest.
+- Not across a handler that delimits its body: `all { either { ... } }` is refused, `either { all { ... } }` works.
+- On the JVM, a `for` over a JDK collection keeps its iterator in a closed module: open it to copy it,
+  `--add-opens java.base/java.util=ALL-UNNAMED` (ranges and `repeat` need nothing). From JDK 26, copying writes
+  final fields: `--enable-final-field-mutation=ALL-UNNAMED` keeps it quiet, and will be needed when the JDK blocks it.
+
+## Limits
 - Handlers are chosen lexically, not dynamically as in EFF: an operation goes to the handler whose capability it was
   given. A function made under one handler and called under another of the same effect asks the first — the
   semantics of lexically scoped handlers, abstraction-safe; the only one Kotlin can type. A capability kept after its
@@ -211,6 +241,7 @@ JMH on the JVM, `./gradlew :bench:jmh`, 1000 operations a run, µs per run, lowe
 | a handler entered and left, no operation | 32 | 360 152 |
 | shift: the rest taken and resumed by the handler right outside | 32 | 271 600 |
 | shift across three delimiting handlers | 109 | 785 034 |
+| multi-shot: every Pythagorean triple to 30 — 4 959 copies, 5 456 dead ends | 4 752 | 4 449 170 |
 | a failure, the rest dropped and unwound | 779 | 1 000 152 |
 
 A handler in place costs what an interface call costs — the same programs take 16–36 µs on okay-scala's machine. A

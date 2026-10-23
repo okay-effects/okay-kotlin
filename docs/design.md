@@ -111,14 +111,14 @@ made of them as the paper's EFF→DEL translation makes them (§6.4). `SpecTest`
 | (op): `k` = `λx.handle H[return x] with H` — deep | the rest resumed runs under the handler again | same |
 | (ret): `handle (return V) with H ⇝ H^ret[V/x]` | the body's value, through the code after it in `handle` | same |
 | (capture): `S0 k.M` runs `M` with the reset removed | the clause runs outside the body | same |
-| `k` a value, used any number of times | a value, used once | one-shot |
+| `k` a value, used any number of times | a value; `k.copy()` for every use but one | JVM and JS |
 | EFF state (Fig. 10), DEL state (Fig. 18) | `runStateEff`, `runStateDel`: a clause returns `λs. k(s)(s)` | same |
 | MON→EFF (§6.5) untypeable: operations monomorphic | `reflect`: an interface's generic function | as conjectured |
 | the operation handled by the nearest handler, at run time | by the handler whose capability it was given | lexical |
 
-**One-shot.** The calculi's continuations are thunks, forced any number of times; Kotlin's are resumed once. So
-okay-kotlin has the handlers that resume at most once — state, readers, writers, exceptions, generators,
-asynchrony, reflection of every monad whose bind calls its function at most once — and not nondeterminism's.
+**Multi-shot.** The calculi's continuations are thunks, forced any number of times; Kotlin's are resumed once. A
+copy of the rest is a continuation of its own: on the JVM and JavaScript, `k.copy()` copies its frames — see below.
+Native code cannot, and there okay-kotlin has the handlers that resume at most once.
 
 **Lexical, not dynamic.** In EFF an operation is a name, and the nearest handler of that name on the stack takes it:
 a function made under one handler and called under another asks the second. In okay-kotlin an operation is a call
@@ -134,6 +134,23 @@ scope — the first-order programs; they differ when a function that performs is
 same effect. What lexical scoping costs: a capability can outlive its handler — kept in a variable, returned — and
 Kotlin has no capture checking to stop it. A handler answering in place keeps answering (it is an object); one that
 takes the rest fails at run time, `shift outside its handler's body`.
+
+## Copying a continuation
+
+A suspend function compiles to a class whose object is its frame: its locals and its step are fields, the frame it
+returns to is `completion`. The rest of a body is the chain of frames from the operation up to the body's root. A copy
+of each — fields copied, `completion` pointed at the next copy — is a rest of its own, at the same point; resumed, it
+goes on as the original would, and the original is still there to be resumed. This is not replay: nothing runs again.
+
+On the JVM the frames are copied by reflection: an instance made without a constructor (`ReflectionFactory`), every
+field set — final fields too, which JDK 26 warns of (`--enable-final-field-mutation`). On JavaScript a frame is an
+object: `Object.assign(Object.create(prototype), frame)`, and the name of the `completion` property is found once, by a
+probe. Native code gives no way to read a frame's fields.
+
+A copy is shallow, as the frames are: what the locals point to on the heap is one for every copy. A loop's iterator is
+the frame's own, so it is copied with it — a range's on JavaScript, a collection's on both (the JDK's when its module
+is opened). A frame of a handler that delimits its body cannot be copied — its machine would be one for both copies —
+so a copy is refused when the operation came through one (`relayed`); the copying handler goes inside it.
 
 ## Waiting for the outside
 

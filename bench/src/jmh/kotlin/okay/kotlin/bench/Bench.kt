@@ -7,6 +7,10 @@ import okay.kotlin.ask
 import okay.kotlin.either
 import okay.kotlin.get
 import okay.kotlin.handle
+import okay.kotlin.Choose
+import okay.kotlin.all
+import okay.kotlin.among
+import okay.kotlin.none
 import okay.kotlin.Interceptor
 import okay.kotlin.Operation
 import okay.kotlin.intercepted
@@ -55,6 +59,15 @@ suspend fun counting(n: Int) = repeat(n) { s.put(s.get() + 1) }
 
 val passing = object : Interceptor {
     override suspend fun <X> around(op: Operation, proceed: suspend () -> X): X = proceed()
+}
+
+context(_: Choose)
+suspend fun triple(n: Int): Int {
+    val a = among((1..n).toList())
+    val b = among((a..n).toList())
+    val c = among((b..n).toList())
+    if (a * a + b * b != c * c) none()
+    return c
 }
 
 /** n = 1000 operations a run, as okay-scala's and okay-simple's benchmarks */
@@ -110,6 +123,10 @@ open class Bench {
         val seeing = observer { _, _ -> seen++ }
         state(0) { context(contextOf<State<Int>>().intercepted(seeing)) { counting(n) } }.first + seen
     }
+
+    /** multi-shot: every Pythagorean triple to 30, each choice's rest copied for every value but the last */
+    @Benchmark
+    fun triples(): Int = runEffects { all { triple(30) } }.size
 
     /** a handler that delimits its body, entered and left with no operation, n times */
     @Benchmark
