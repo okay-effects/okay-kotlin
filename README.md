@@ -122,6 +122,48 @@ suspend fun <A> answering(n: Int, body: suspend context(Ask) () -> A): A = handl
 Generic handlers are given their effect's type: `either<String, _> { ... }`, `collect<Int, _> { ... }` — Kotlin infers
 type parameters from arguments, not from what a lambda asks of its context.
 
+## Interception: control and audit
+
+An effect's capability wrapped by `intercepted(interceptor)` shows each operation to the interceptor first, as data —
+`Operation(effect, name, args)` — with `proceed`, the way on to its handler. The interceptor tells (an observer, a
+trail), passes it on, or refuses it (throws, or `raise`s to the program's own `Fail`):
+
+```kotlin
+val trail = observer { op, outcome -> log += "$op -> $outcome" }            // each operation and its answer
+val noDeletes = guard { op -> if (op.name == "remove") raise("no deletes: $op") }
+
+either<String, _> {
+    context(store.intercepted(trail + noDeletes)) { move("a", "b") }       // trail first, then the guard
+}
+```
+
+Changing an answer needs its type: that is delegation, `object : Store<K, V> by store { ... }`, checked by the
+compiler. The standard effects have their `intercepted`; for an effect of yours, mark it and the generator writes it:
+
+```kotlin
+@Effect
+interface Orders<Id : Comparable<Id>, in Line> {
+    suspend fun place(lines: List<Line>): Id
+    suspend fun cancel(id: Id, reason: String? = null): Boolean
+}
+// generated: fun <Id : Comparable<Id>, Line> Orders<Id, Line>.intercepted(interceptor: Interceptor): Orders<Id, Line>
+```
+
+```kotlin
+plugins { id("com.google.devtools.ksp") version "2.3.12" }
+dependencies { ksp("io.github.okay-effects:okay-kotlin-ksp:0.1.0") }
+```
+
+**Sensitive effects** are given only under an audit: their handler gives its body a `Vault`, not the capability, and
+`audit(vault, interceptor) { ... }` gives the capability with every operation through the interceptor — so a program
+can pay only where an auditor sees and may refuse each payment:
+
+```kotlin
+payments { vault ->                                      // the handler: vault(bank, Payments::intercepted)
+    audit(vault, auditor + limit) { salaries() }          // salaries() needs a Payments: it has one only here
+}
+```
+
 ## With kotlinx.coroutines
 
 A handled body may wait for anything — `delay`, `withContext(Dispatchers.IO)`, children in a `coroutineScope` — and
@@ -151,6 +193,8 @@ JMH on the JVM, `./gradlew :bench:jmh`, 1000 operations a run, µs per run, lowe
 |---|---|---|
 | a state's get and put | 1.6 | 16 216 (boxed Ints) |
 | ask, under four other handlers | 0.6 | 1 176 |
+| the same, each through an interceptor passing it on | 2.1 | 16 240 |
+| the same, each seen by an observer with its answer | 17 | 168 392 |
 | a handler entered and left, no operation | 28 | 312 152 |
 | shift: the rest taken and resumed by the handler right outside | 32 | 279 552 |
 | shift across three delimiting handlers | 109 | 785 034 |
@@ -160,6 +204,9 @@ A handler in place costs what an interface call costs — the same programs take
 `shift` costs about 280 bytes; a failure, its exception thrown through the body.
 
 ## Building
+
+Modules: `core` (`okay-kotlin`: the effects, interception, no dependency), `ksp` (`okay-kotlin-ksp`: the
+generator), `examples` (effects of a shop, their interception generated and tested), `bench`.
 
 `./gradlew check` on the JVM; `./gradlew -Pplatforms=jvm,js,native :core:allTests` on Node.js and native too.
 Apache-2.0.

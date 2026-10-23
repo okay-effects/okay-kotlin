@@ -7,6 +7,10 @@ import okay.kotlin.ask
 import okay.kotlin.either
 import okay.kotlin.get
 import okay.kotlin.handle
+import okay.kotlin.Interceptor
+import okay.kotlin.Operation
+import okay.kotlin.intercepted
+import okay.kotlin.observer
 import okay.kotlin.optional
 import okay.kotlin.put
 import okay.kotlin.raise
@@ -49,6 +53,10 @@ suspend fun shifts(n: Int): Int {
 context(s: State<Int>)
 suspend fun counting(n: Int) = repeat(n) { s.put(s.get() + 1) }
 
+val passing = object : Interceptor {
+    override suspend fun <X> around(op: Operation, proceed: suspend () -> X): X = proceed()
+}
+
 /** n = 1000 operations a run, as okay-scala's and okay-simple's benchmarks */
 @JmhState(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
@@ -87,6 +95,20 @@ open class Bench {
         var s = 0
         repeat(n) { s += (either<String, Int> { raise("no") } as Either.Left).error.length }
         s
+    }
+
+    /** the state's get and put, each through an interceptor that passes it on */
+    @Benchmark
+    fun stateIntercepted(): Int = runEffects {
+        state(0) { context(contextOf<State<Int>>().intercepted(passing)) { counting(n) } }.first
+    }
+
+    /** the same, each seen by an observer with its answer */
+    @Benchmark
+    fun stateObserved(): Int = runEffects {
+        var seen = 0
+        val seeing = observer { _, _ -> seen++ }
+        state(0) { context(contextOf<State<Int>>().intercepted(seeing)) { counting(n) } }.first + seen
     }
 
     /** a handler that delimits its body, entered and left with no operation, n times */

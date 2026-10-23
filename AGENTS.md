@@ -11,10 +11,13 @@ Read before anything else, then `docs/design.md`.
   class, unless an interface cannot say it.
 - An effect answered in place is a plain implementation — a virtual call. Only control takes the rest of the body:
   `handle` and `Prompt.shift` / `abort`. Do not make an answered-in-place effect shift: it is ~20× slower.
+- Interception is a wrapper of a capability: `intercepted(interceptor)`, each suspend function an `Operation` through
+  `Interceptor.around`. The standard effects' wrappers are hand-written in `Intercepted.kt` and must look exactly like
+  what `ksp/` generates for `@Effect`; a new standard effect gets its wrapper and a line in `InterceptTest`.
 - One-shot continuations, by the platform and by the user's rule: NO REPLAY to fake multi-shot. So no `Choose.all`.
 - No casts, no `!!` in the library. Warnings are errors.
 - A handler's type parameters cannot be inferred from what its body asks of the context: tests and docs write
   `either<String, _> { ... }`. Do not "fix" it with overloads that guess.
 - Lines at most 120 wide. Commits: plain messages, no attribution trailers.
-- `./gradlew check` (JVM); `./gradlew -Pplatforms=jvm,js,native :core:allTests`; `./gradlew :bench:jmh`. The README's
-  example is `ReadmeTest`: change both together.
+- `./gradlew check` (JVM: core, the generator on `examples`); `./gradlew -Pplatforms=jvm,js,native :core:allTests`;
+  `./gradlew :bench:jmh`. The README's example is `ReadmeTest`: change both together.

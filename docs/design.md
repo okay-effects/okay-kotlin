@@ -70,6 +70,30 @@ blocks run, `use` closes what it opened — and then gives the clause's value. T
 choice, `Choose.all` — need a continuation copied, which Kotlin does not give, or the body run again from the start,
 which this library does not do.
 
+## Interception
+
+okay-direct shows every operation to an interceptor because its operations are data; okay-kotlin's are calls of an
+interface, and a handler answering in place is no more than the call — nothing in between sees it. So interception
+is a wrapper of the capability: `intercepted(interceptor)` implements the interface again, each suspend function
+making an `Operation` — the effect's name, the function's, the arguments — and calling `interceptor.around(op) {
+inner.f(args) }`. `around` is generic in the answer's type `X`, inferred at each call: the interceptor may pass the
+operation on, see its answer as a value, or refuse it, with no cast — but it cannot make an `X` of its own. Changing
+an answer is typed work: delegation, which the compiler checks.
+
+The wrappers are code, the same for every interface: the standard effects' are written in `Intercepted.kt`, and
+`okay-kotlin-ksp` writes them for any interface marked `@Effect` — its type parameters and their bounds, `vararg`,
+function types, `Nothing`, defaults, inherited functions. A function that is not suspend, and a property, is passed
+on as it is: `around` is a suspend function. A default function is intercepted as one operation; the calls it makes
+of the wrapped capability's own functions are not.
+
+When nothing keeps the `Operation`, the JIT does not make it: a wrapper that passes everything on costs ~0.5 ns an
+operation. An observer that keeps them costs what it keeps.
+
+A sensitive effect's handler gives a `Vault` instead of the capability, and `audit(vault, interceptor)` opens it,
+wrapped: the program cannot have the capability but through an interceptor. This is okay-direct's `Audit`; okay-direct's
+`Observer` — every operation of every effect, with no wrapper chosen — has no counterpart: it would tax every call
+of every handler answering in place, which is what makes them free.
+
 ## Waiting for the outside
 
 A body may suspend for something that is not an effect — `delay`, `withContext(Dispatchers.IO)`, an `await`. Then the
