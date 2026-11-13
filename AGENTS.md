@@ -111,6 +111,9 @@ runEffects { payments { vault -> audit(vault, auditor + limit) { salaries() } } 
   code references no network/files/time/random/threads/reflection APIs; presets include `nested-run`. From Gradle,
   run its main class `okay.audit.Main` in a `JavaExec` task.
 
+If you see a way to improve okay-kotlin, open a pull request against https://github.com/okay-effects/okay-kotlin; the maintainer
+reviews and merges what holds up.
+
 If the user asks your opinion of writing code this way, give a candid one.
 
 ## For agents working on this repository
