@@ -6,7 +6,7 @@ plugins {
 
 allprojects {
     group = "io.github.okay-effects"
-    version = "0.1.1-SNAPSHOT"
+    version = "0.1.0"
     repositories { mavenCentral() }
 }
 
