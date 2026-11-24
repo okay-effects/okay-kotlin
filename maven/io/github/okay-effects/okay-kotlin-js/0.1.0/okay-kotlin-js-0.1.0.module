@@ -44,11 +44,11 @@
         {
           "name": "okay-kotlin-js-0.1.0.klib",
           "url": "okay-kotlin-js-0.1.0.klib",
-          "size": 131925,
-          "sha512": "d5600d9ab2ba60396d38938635e68698a21cf26197217c505dbd0bf62a40106b429afb8325c77ba88f40f1da502a494c671999d2b4ba9e4c99bf0c242226b3b6",
-          "sha256": "858143ff147f403a89cc6591fbaccd43072d0ab030f145fa4c6c92db034c04ea",
-          "sha1": "bc061106b6eb83e0e0fdeed87edf6b477b39eb8a",
-          "md5": "afa87cfe4e1246069537e220d335558a"
+          "size": 132358,
+          "sha512": "df3faf4ceb3620766f658dbd1bb1266ea17ba1ec5c3ac2a6b4d164e9db441c3b358b83215e9ac0bf292c9fd09749f8eeb667b324981c2d7b848570058360d674",
+          "sha256": "df78e84525d0cfb04bb9e3f4c14851661fcb7a6a589beaed77168961d1897456",
+          "sha1": "38ce8e3575f869d141f17827b4b25476a4b74329",
+          "md5": "ef29f4d6e0bf4cd7d176af56c66f2ed3"
         }
       ]
     },
@@ -81,11 +81,11 @@
         {
           "name": "okay-kotlin-js-0.1.0.klib",
           "url": "okay-kotlin-js-0.1.0.klib",
-          "size": 131925,
-          "sha512": "d5600d9ab2ba60396d38938635e68698a21cf26197217c505dbd0bf62a40106b429afb8325c77ba88f40f1da502a494c671999d2b4ba9e4c99bf0c242226b3b6",
-          "sha256": "858143ff147f403a89cc6591fbaccd43072d0ab030f145fa4c6c92db034c04ea",
-          "sha1": "bc061106b6eb83e0e0fdeed87edf6b477b39eb8a",
-          "md5": "afa87cfe4e1246069537e220d335558a"
+          "size": 132358,
+          "sha512": "df3faf4ceb3620766f658dbd1bb1266ea17ba1ec5c3ac2a6b4d164e9db441c3b358b83215e9ac0bf292c9fd09749f8eeb667b324981c2d7b848570058360d674",
+          "sha256": "df78e84525d0cfb04bb9e3f4c14851661fcb7a6a589beaed77168961d1897456",
+          "sha1": "38ce8e3575f869d141f17827b4b25476a4b74329",
+          "md5": "ef29f4d6e0bf4cd7d176af56c66f2ed3"
         }
       ]
     },
@@ -104,11 +104,11 @@
         {
           "name": "okay-kotlin-js-0.1.0-sources.jar",
           "url": "okay-kotlin-js-0.1.0-sources.jar",
-          "size": 25907,
-          "sha512": "5364c86d950409276381f008c00fa4e1b2113e74d528cca456646c9a1b689c60472ac9359ee05abf301daeaeb3a3dd09a73ff526b86bdf8a4a356bce7ead79b8",
-          "sha256": "433a0fae1fb79d06d82ec720e743af06ec5f84903536bb40d11d993261b15d9b",
-          "sha1": "e1432340f7e0e6ccf7a54a26336c9439ee2f9520",
-          "md5": "c5d697d120b8269f77aa2dc46d08deeb"
+          "size": 26150,
+          "sha512": "d967ca03f9f001350b0c3200384289a208797e5be6c16a825f195be1ba27e2f5770714406337e6c813dbd5a338faef2023d7d6324bbce3e145786e2a9420dda0",
+          "sha256": "3ca56f51b92f0dec06f444d18a27be519a5bd8fdbb651ed394d351a87698660b",
+          "sha1": "6fcfb50103e6fff8ab0f1c00e8c623f1ccf2e9dd",
+          "md5": "061e8b1525b3ca710f67ed53a363098e"
         }
       ]
     }

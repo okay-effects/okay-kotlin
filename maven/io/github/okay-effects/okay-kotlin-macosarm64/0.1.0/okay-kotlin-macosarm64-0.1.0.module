@@ -37,11 +37,11 @@
         {
           "name": "okay-kotlin-macosArm64Main-0.1.0.klib",
           "url": "okay-kotlin-macosarm64-0.1.0.klib",
-          "size": 136235,
-          "sha512": "edb1160e3cef0c501f28d8626a99275c72a896b20b95920d4aa98b122914d566e279a36fff054db4584554093890735b20dbaf1698510d89a838567416363750",
-          "sha256": "6c9fdfcaa0822cbaa66c01a71c6519ebf66ca7a3bac27bb783b6d2ced042d515",
-          "sha1": "523cc1780a43e3470f4ccd38675da5e92cffacff",
-          "md5": "63dc0aa5a66c4645ec7e2b6adbd891c0"
+          "size": 136652,
+          "sha512": "011b7f5a4cb270bda635436988955b52cc25766ec7bc43c8904efc59127dafc6a6ef594577ba29f7c57241db8f5bf5121137e7b30b758659fa464e07be647c95",
+          "sha256": "e2d609ac2a2802ce3b2f60cf07db50f404ee91d39c3f780d74c51223795ea8f7",
+          "sha1": "358031256661455620fb170cf3b5c05eb1f54394",
+          "md5": "345b06c5aa2b98672bfc6af0b13655aa"
         }
       ]
     },
@@ -60,11 +60,11 @@
         {
           "name": "okay-kotlin-macosarm64-0.1.0-sources.jar",
           "url": "okay-kotlin-macosarm64-0.1.0-sources.jar",
-          "size": 25106,
-          "sha512": "ac6b02c055455bd951d6f353764f1ab5f946da9e8d90f6cc768a62b931efaaac49f77a70a546098f8084170d350f64133791e434e4920cc60ad6bc51513908d0",
-          "sha256": "c1d92e8b824c7ce984f92b152bff19e7d9d830f9784b3aa2a2ffd25c8a5cde74",
-          "sha1": "ec09e7156cc6a1fb6096da4eee3608d4ab404660",
-          "md5": "fc1356ffa126a13b84259e7541914c98"
+          "size": 25349,
+          "sha512": "81a1b9b999357dced6ce50807cfb6a1e1ef2018842ac50ff7b79ef4ca7eb61edeb7a4a8e775b5c21301fb204a87bf597952cf8f854e1678cf20ce68cf0361ff3",
+          "sha256": "2899e80970a26e0bf428e1009f7431153f6403dcd389fbb57a2d401173749d80",
+          "sha1": "77c645cb56406e6d15cd7d7a60a967a610200e2d",
+          "md5": "c1a4e09d6e20a2b6ba6a2eca097f77e5"
         }
       ]
     },
