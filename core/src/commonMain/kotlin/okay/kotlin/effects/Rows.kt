@@ -8,15 +8,23 @@ package okay.kotlin.effects
 interface Op<E, X>
 
 /** the row of no effect */
-class Nil private constructor()
+class Pure private constructor()
 
 /** the row `R` with the effect `E` last — innermost, the first handled: okay-scala's `R + E` */
-class With<E, R> private constructor()
+class Eff<E, R> private constructor()
+
+/** the old name of [Pure] */
+@Deprecated("the family's name is Pure", ReplaceWith("Pure"))
+typealias Nil = Pure
+
+/** the old name of [Eff] */
+@Deprecated("the family's name is Eff", ReplaceWith("Eff<E, R>"))
+typealias With<E, R> = Eff<E, R>
 
 /** an operation of the row `R`, placed: the last effect's, or one further out's */
 sealed interface At<R, X> {
-    class Last<E, R, X>(val op: Op<E, X>) : At<With<E, R>, X>
-    class Init<E, R, X>(val op: At<R, X>) : At<With<E, R>, X>
+    class Last<E, R, X>(val op: Op<E, X>) : At<Eff<E, R>, X>
+    class Init<E, R, X>(val op: At<R, X>) : At<Eff<E, R>, X>
 }
 
 /** an operation of a row met by the handler of `E`: its own, or another's, placed in the row outside it */
@@ -42,21 +50,21 @@ sealed interface Place<E, R, Rest> {
     /** the row's handlers, `E`'s at this place replaced */
     fun replace(handlers: Handlers<R>, handling: Handling<E>): Handlers<R>
 
-    /** the last effect of `With<E, R>` */
-    class Last<E, R> : Place<E, With<E, R>, R> {
-        override fun <X> inject(op: Op<E, X>): At<With<E, R>, X> = At.Last(op)
-        override fun <X> take(op: At<With<E, R>, X>): Taken<E, R, X> = when (op) {
+    /** the last effect of `Eff<E, R>` */
+    class Last<E, R> : Place<E, Eff<E, R>, R> {
+        override fun <X> inject(op: Op<E, X>): At<Eff<E, R>, X> = At.Last(op)
+        override fun <X> take(op: At<Eff<E, R>, X>): Taken<E, R, X> = when (op) {
             is At.Last -> Taken.Mine(op.op)
             is At.Init -> Taken.Theirs(op.op)
         }
-        override fun find(handlers: Handlers<With<E, R>>): Handling<E> = when (handlers) {
+        override fun find(handlers: Handlers<Eff<E, R>>): Handling<E> = when (handlers) {
             is Handlers.Slot -> handlers.handling
             else -> error("no handler at the last place")
         }
-        override fun put(outside: Handlers<R>, handling: Handling<E>): Handlers<With<E, R>> =
+        override fun put(outside: Handlers<R>, handling: Handling<E>): Handlers<Eff<E, R>> =
             Handlers.Slot(handling, outside)
-        override fun <X> back(op: At<R, X>): At<With<E, R>, X> = At.Init(op)
-        override fun replace(handlers: Handlers<With<E, R>>, handling: Handling<E>): Handlers<With<E, R>> =
+        override fun <X> back(op: At<R, X>): At<Eff<E, R>, X> = At.Init(op)
+        override fun replace(handlers: Handlers<Eff<E, R>>, handling: Handling<E>): Handlers<Eff<E, R>> =
             when (handlers) {
                 is Handlers.Slot -> Handlers.Slot(handling, handlers.outside)
                 else -> error("no handler at the last place")
@@ -64,29 +72,29 @@ sealed interface Place<E, R, Rest> {
     }
 
     /** one further out than the last, `G` */
-    class Init<E, G, R, Rest>(val inner: Place<E, R, Rest>) : Place<E, With<G, R>, With<G, Rest>> {
-        override fun <X> inject(op: Op<E, X>): At<With<G, R>, X> = At.Init(inner.inject(op))
-        override fun <X> take(op: At<With<G, R>, X>): Taken<E, With<G, Rest>, X> = when (op) {
+    class Init<E, G, R, Rest>(val inner: Place<E, R, Rest>) : Place<E, Eff<G, R>, Eff<G, Rest>> {
+        override fun <X> inject(op: Op<E, X>): At<Eff<G, R>, X> = At.Init(inner.inject(op))
+        override fun <X> take(op: At<Eff<G, R>, X>): Taken<E, Eff<G, Rest>, X> = when (op) {
             is At.Last -> Taken.Theirs(At.Last(op.op))
             is At.Init -> when (val taken = inner.take(op.op)) {
                 is Taken.Mine -> Taken.Mine(taken.op)
                 is Taken.Theirs -> Taken.Theirs(At.Init(taken.op))
             }
         }
-        override fun find(handlers: Handlers<With<G, R>>): Handling<E> = when (handlers) {
+        override fun find(handlers: Handlers<Eff<G, R>>): Handling<E> = when (handlers) {
             is Handlers.Slot -> inner.find(handlers.outside)
             else -> error("no handler further out")
         }
-        override fun put(outside: Handlers<With<G, Rest>>, handling: Handling<E>): Handlers<With<G, R>> =
+        override fun put(outside: Handlers<Eff<G, Rest>>, handling: Handling<E>): Handlers<Eff<G, R>> =
             when (outside) {
                 is Handlers.Slot -> Handlers.Slot(outside.handling, inner.put(outside.outside, handling))
                 else -> error("no handler further out")
             }
-        override fun <X> back(op: At<With<G, Rest>, X>): At<With<G, R>, X> = when (op) {
+        override fun <X> back(op: At<Eff<G, Rest>, X>): At<Eff<G, R>, X> = when (op) {
             is At.Last -> At.Last(op.op)
             is At.Init -> At.Init(inner.back(op.op))
         }
-        override fun replace(handlers: Handlers<With<G, R>>, handling: Handling<E>): Handlers<With<G, R>> =
+        override fun replace(handlers: Handlers<Eff<G, R>>, handling: Handling<E>): Handlers<Eff<G, R>> =
             when (handlers) {
                 is Handlers.Slot -> Handlers.Slot(handlers.handling, inner.replace(handlers.outside, handling))
                 else -> error("no handler further out")
@@ -103,36 +111,36 @@ interface Sub<R, S> {
     fun handlers(of: Handlers<S>): Handlers<R>
 
     /** no effect, into any row */
-    class Empty<S> : Sub<Nil, S> {
-        override fun <X> rename(op: At<Nil, X>): At<S, X> = error("an operation of no effect")
-        override fun handlers(of: Handlers<S>): Handlers<Nil> = Handlers.None
+    class Empty<S> : Sub<Pure, S> {
+        override fun <X> rename(op: At<Pure, X>): At<S, X> = error("an operation of no effect")
+        override fun handlers(of: Handlers<S>): Handlers<Pure> = Handlers.None
     }
 
     /** `E` at its place in `S`, and the rest of the row by `rest` */
-    class Cons<E, R, S>(val at: In<E, S>, val rest: Sub<R, S>) : Sub<With<E, R>, S> {
-        override fun <X> rename(op: At<With<E, R>, X>): At<S, X> = when (op) {
+    class Cons<E, R, S>(val at: In<E, S>, val rest: Sub<R, S>) : Sub<Eff<E, R>, S> {
+        override fun <X> rename(op: At<Eff<E, R>, X>): At<S, X> = when (op) {
             is At.Last -> at.inject(op.op)
             is At.Init -> rest.rename(op.op)
         }
-        override fun handlers(of: Handlers<S>): Handlers<With<E, R>> = Handlers.Slot(at.find(of), rest.handlers(of))
+        override fun handlers(of: Handlers<S>): Handlers<Eff<E, R>> = Handlers.Slot(at.find(of), rest.handlers(of))
     }
 
     /** the row with one more effect inside it, `G`, which the program does not see */
-    class Inner<G, R> : Sub<R, With<G, R>> {
-        override fun <X> rename(op: At<R, X>): At<With<G, R>, X> = At.Init(op)
-        override fun handlers(of: Handlers<With<G, R>>): Handlers<R> = when (of) {
+    class Inner<G, R> : Sub<R, Eff<G, R>> {
+        override fun <X> rename(op: At<R, X>): At<Eff<G, R>, X> = At.Init(op)
+        override fun handlers(of: Handlers<Eff<G, R>>): Handlers<R> = when (of) {
             is Handlers.Slot -> of.outside
             else -> error("no handler inside")
         }
     }
 
     /** `E` once more, inside: its operations to the new one, the rest's where they were — what `intercept` runs in */
-    class Interposing<E, R, Rest>(val at: Place<E, R, Rest>) : Sub<R, With<E, R>> {
-        override fun <X> rename(op: At<R, X>): At<With<E, R>, X> = when (val taken = at.take(op)) {
+    class Interposing<E, R, Rest>(val at: Place<E, R, Rest>) : Sub<R, Eff<E, R>> {
+        override fun <X> rename(op: At<R, X>): At<Eff<E, R>, X> = when (val taken = at.take(op)) {
             is Taken.Mine -> At.Last(taken.op)
             is Taken.Theirs -> At.Init(at.back(taken.op))
         }
-        override fun handlers(of: Handlers<With<E, R>>): Handlers<R> = when (of) {
+        override fun handlers(of: Handlers<Eff<E, R>>): Handlers<R> = when (of) {
             is Handlers.Slot -> at.replace(of.outside, of.handling)
             else -> error("no handler inside")
         }
@@ -147,7 +155,7 @@ class Under<G, Rest> internal constructor()
 
 /** a place from outside a handler of `G`, inside it: `context(lift(fail)) { ... }` */
 context(_: Under<G, Rest>)
-fun <E, G, Rest, R0> lift(place: Place<E, Rest, R0>): Place<E, With<G, Rest>, With<G, R0>> = Place.Init(place)
+fun <E, G, Rest, R0> lift(place: Place<E, Rest, R0>): Place<E, Eff<G, Rest>, Eff<G, R0>> = Place.Init(place)
 
 /** a handler as an object answering its effect's operations: how an engine of continuations finds it */
 interface Handling<E> {
@@ -156,6 +164,6 @@ interface Handling<E> {
 
 /** the handlers of a row, one at each place */
 sealed interface Handlers<R> {
-    object None : Handlers<Nil>
-    class Slot<E, R>(val handling: Handling<E>, val outside: Handlers<R>) : Handlers<With<E, R>>
+    object None : Handlers<Pure>
+    class Slot<E, R>(val handling: Handling<E>, val outside: Handlers<R>) : Handlers<Eff<E, R>>
 }

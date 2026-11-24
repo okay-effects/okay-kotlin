@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 
 /** the effects inside kotlinx.coroutines: a handled body waits for a timer, another thread, children of its own */
 class CoroutinesTest {
-    context(a: Ask, f: Fail<String>, w: Writer<String>)
+    context(a: Ask, f: Throws<String>, w: Writer<String>)
     suspend fun slow(): Int {
         delay(20)
         val x = a.ask()

@@ -23,7 +23,7 @@ interface Accounts {
 }
 
 // a program: its context parameters are everything it may do; the compiler checks it
-context(accounts: Accounts, fail: Fail<String>)
+context(accounts: Accounts, fail: Throws<String>)
 suspend fun transfer(from: String, to: String, amount: Int) {
     ensure(accounts.balance(from) >= amount) { "$from has less than $amount" }
     accounts.withdraw(from, amount)
@@ -51,7 +51,7 @@ val (db, result) = runEffects {
 - Control (ending or taking the rest of the body) is `handle { prompt -> ... }` with `prompt.abort(v)` or
   `prompt.shift { k -> ... }` (README "Writing a handler": `either`, `answering`).
   An effect answered in place should be a plain implementation, not a `shift` (~20x slower).
-- Standard effects and handlers: `State`/`state`, `Reader`/`reader`, `Writer`/`writer`, `Fail`/`either`,`recover`,
+- Standard effects and handlers: `State`/`state`, `Reader`/`reader`, `Writer`/`writer`, `Throws`/`either`,`recover`,
   `Abort`/`optional`, `Emit`/`collect`, `Choose`/`all`,`first`, `Fresh`/`numbered`, `Randomness`/`seeded`,
   `Store`/`inMemory`, `Clock`/`virtualTime`, `Log`/`logged`,`logTo` (README table).
 - The other style, effects as data (`okay.kotlin.effects`: `Prog<F, R, A>`, engines `Machine` and `Direct`), is in
@@ -60,7 +60,7 @@ val (db, result) = runEffects {
 ### Design rules
 
 - Business logic = suspend functions whose context parameters are effects; the signature says what it may do. A
-  function with `context(accounts: Accounts, fail: Fail<String>)` cannot touch anything else through okay.
+  function with `context(accounts: Accounts, fail: Throws<String>)` cannot touch anything else through okay.
 - Real resources (DB, HTTP clients, files, clock, keys) only inside handlers the host builds at the entry point;
   programs receive effects, data and ids, never a live client.
 - Run only at the entry: one `runEffects { ... }` (or `runBlocking { ... }` if the body waits on real I/O). Never call
@@ -140,8 +140,11 @@ Read before anything else, then `docs/design.md`.
   user's rule). Native has none. A copy is taken before `k` is resumed; a delimiting handler between refuses it.
 - `okay.kotlin.effects`: effects as data, ONE PROGRAM, TWO ENGINES — `Effects<F>` the interface, `Machine` (CEK,
   okay-scala's) and `Direct` (this library's continuations). Programs and standard handlers are written once, generic
-  in `F`; `EffectsTck` holds both engines to the same answers — a new handler or word gets a line there. Rows `With`,
+  in `F`; `EffectsTck` holds both engines to the same answers — a new handler or word gets a line there. Rows `Eff`,
   typed places; a handler gives its body its place, `lift` carries outer ones in.
+- Names are the family's (okay-effects CONCEPT.md §3): `Throws`, rows `Eff`/`Pure`; the old `Fail`, `With`, `Nil`
+  are deprecated aliases. `runEffects` keeps its name: a top-level `run(body: suspend () -> A)` loses overload
+  resolution to the standard library's `run { }` even when imported by name.
 - No casts, no `!!` in the library. Warnings are errors.
 - A handler's type parameters cannot be inferred from what its body asks of the context: tests and docs write
   `either<String, _> { ... }`. Do not "fix" it with overloads that guess.

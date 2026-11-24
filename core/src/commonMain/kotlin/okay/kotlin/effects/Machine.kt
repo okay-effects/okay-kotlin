@@ -21,7 +21,7 @@ object Machine : Effects<Machine> {
     override fun <R, S, A> embed(p: Prog<Machine, R, A>, sub: Sub<R, S>): Prog<Machine, S, A> =
         Node.Remap(p.node(), sub)
 
-    override fun <A> run(p: Prog<Machine, Nil, A>): A {
+    override fun <A> run(p: Prog<Machine, Pure, A>): A {
         var turn: Turn<A> = Running(p.node(), Frames.End(), Levels.Top())
         while (turn !is Done) turn = turn.next()
         return turn.value
@@ -122,10 +122,10 @@ private sealed class Levels<R, V, Z> {
     abstract fun <X, R0, V0> perform(at: At<R, X>, inner: Frames<R0, X, V0>, crossed: Crossed<R0, V0, R, V>,
                                      fuel: Int): Turn<Z>
 
-    class Top<Z> : Levels<Nil, Z, Z>() {
+    class Top<Z> : Levels<Pure, Z, Z>() {
         override fun ret(v: Z, fuel: Int): Turn<Z> = Done(v)
-        override fun <X, R0, V0> perform(at: At<Nil, X>, inner: Frames<R0, X, V0>,
-                                         crossed: Crossed<R0, V0, Nil, Z>, fuel: Int): Turn<Z> =
+        override fun <X, R0, V0> perform(at: At<Pure, X>, inner: Frames<R0, X, V0>,
+                                         crossed: Crossed<R0, V0, Pure, Z>, fuel: Int): Turn<Z> =
             error("an operation of no effect: the row is empty")
     }
 

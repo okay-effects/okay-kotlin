@@ -47,7 +47,7 @@ abstract class EffectsTck<F>(private val fx: Effects<F>) {
         val written: Pair<List<String>, Int> =
             run(writer { tell<F, String, _>("a").then(tell("b")).with(7) })
         assertEquals(listOf("a", "b") to 7, written)
-        fun upTo(n: Int, out: In<Emit<Int>, With<Emit<Int>, Nil>>): Prog<F, With<Emit<Int>, Nil>, String> =
+        fun upTo(n: Int, out: In<Emit<Int>, Eff<Emit<Int>, Pure>>): Prog<F, Eff<Emit<Int>, Pure>, String> =
             context(out) {
                 loop(1) { i -> if (i > n) pure(Next.Done("done")) else emit<F, Int, _>(i).with(Next.Again(i + 1)) }
             }
@@ -60,12 +60,12 @@ abstract class EffectsTck<F>(private val fx: Effects<F>) {
     @Test
     fun aGeneralHandlerSeesWhatTheRestGives() = with(fx) {
         // the clause after the rest: k's value, doubled
-        val doubled = object : General<F, Reader<Int>, Nil, Int, Int>() {
-            override fun <X> op(op: Op<Reader<Int>, X>, k: (X) -> Prog<F, Nil, Int>): Prog<F, Nil, Int> = when (op) {
+        val doubled = object : General<F, Reader<Int>, Pure, Int, Int>() {
+            override fun <X> op(op: Op<Reader<Int>, X>, k: (X) -> Prog<F, Pure, Int>): Prog<F, Pure, Int> = when (op) {
                 is Reader.Ask -> k(op.answer(10)).map { it * 2 }
                 else -> foreign(op)
             }
-            override fun value(a: Int): Prog<F, Nil, Int> = pure(a + 1)
+            override fun value(a: Int): Prog<F, Pure, Int> = pure(a + 1)
         }
         assertEquals(22, run(handled(doubled) { ask<F, Int, _>() }))
     }

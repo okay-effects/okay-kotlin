@@ -13,7 +13,7 @@ interface Accounts {
 }
 
 /** the program: the domain and a failure, nothing else */
-context(accounts: Accounts, fail: Fail<String>)
+context(accounts: Accounts, fail: Throws<String>)
 suspend fun transfer(from: String, to: String, amount: Int) {
     ensure(accounts.balance(from) >= amount) { "$from has less than $amount" }
     accounts.withdraw(from, amount)

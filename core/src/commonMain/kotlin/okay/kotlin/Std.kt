@@ -2,7 +2,7 @@ package okay.kotlin
 
 // THE STANDARD EFFECTS. Each is an interface; a program asks for it as a context parameter and calls it; its handler
 // is a function that implements it and runs the body with it. An effect answered in place (State, Reader, Writer) is
-// a plain implementation — a virtual call, no continuation; one that takes the rest of the body (Fail, Abort, Emit's
+// a plain implementation — a virtual call, no continuation; one that takes the rest of the body (Throws, Abort, Emit's
 // `take`) shifts to its prompt.
 
 /** a state of type `S`, read and written */
@@ -79,30 +79,36 @@ sealed interface Either<out E, out A> {
 }
 
 /** failure with an error of type `E` */
-fun interface Fail<in E> {
+fun interface Throws<in E> {
     suspend fun raise(e: E): Nothing
 }
 
-context(fail: Fail<E>) suspend fun <E> raise(e: E): Nothing = fail.raise(e)
+/** the old name of [Throws] */
+@Deprecated("the family's name is Throws", ReplaceWith("Throws<E>"))
+typealias Fail<E> = Throws<E>
+
+context(fail: Throws<E>) suspend fun <E> raise(e: E): Nothing = fail.raise(e)
 
 /** `cond`, or the failure `e()` */
-context(fail: Fail<E>) suspend fun <E> ensure(cond: Boolean, e: () -> E) {
+context(fail: Throws<E>) suspend fun <E> ensure(cond: Boolean, e: () -> E) {
     if (!cond) fail.raise(e())
 }
 
 /** the value of an `Either`, or its error raised */
-context(fail: Fail<E>) suspend fun <E, A> Either<E, A>.bind(): A = when (this) {
+context(fail: Throws<E>) suspend fun <E, A> Either<E, A>.bind(): A = when (this) {
     is Either.Left -> fail.raise(error)
     is Either.Right -> value
 }
 
 /** the body's value, or the error it raised */
-suspend fun <E, A> either(body: suspend context(Fail<E>) () -> A): Either<E, A> = handle { prompt ->
-    Either.Right(context(Fail<E> { prompt.abort(Either.Left(it)) }) { body() })
+suspend fun <E, A> either(body: suspend context(Throws<E>) () -> A): Either<E, A> = handle { prompt ->
+    Either.Right(context(Throws<E> { prompt.abort(Either.Left(it)) }) { body() })
 }
 
-/** the body's value, or `recover` of the error it raised — run outside the body, so it may raise to the next `Fail` */
-suspend fun <E, A> recover(body: suspend context(Fail<E>) () -> A, recover: suspend (E) -> A): A =
+/**
+ * the body's value, or `recover` of the error it raised — run outside the body, so it may raise to the next `Throws`
+ */
+suspend fun <E, A> recover(body: suspend context(Throws<E>) () -> A, recover: suspend (E) -> A): A =
     when (val r = either(body)) {
         is Either.Left -> recover(r.error)
         is Either.Right -> r.value

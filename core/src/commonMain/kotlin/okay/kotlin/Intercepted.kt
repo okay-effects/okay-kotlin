@@ -15,8 +15,8 @@ fun <E> Reader<E>.intercepted(interceptor: Interceptor): Reader<E> =
 fun <W> Writer<W>.intercepted(interceptor: Interceptor): Writer<W> =
     Writer { w -> interceptor.around(Operation("Writer", "tell", listOf(w))) { tell(w) } }
 
-fun <E> Fail<E>.intercepted(interceptor: Interceptor): Fail<E> =
-    Fail { e -> interceptor.around(Operation("Fail", "raise", listOf(e))) { raise(e) } }
+fun <E> Throws<E>.intercepted(interceptor: Interceptor): Throws<E> =
+    Throws { e -> interceptor.around(Operation("Throws", "raise", listOf(e))) { raise(e) } }
 
 fun Abort.intercepted(interceptor: Interceptor): Abort =
     Abort { interceptor.around(Operation("Abort", "abort", emptyList())) { abort() } }

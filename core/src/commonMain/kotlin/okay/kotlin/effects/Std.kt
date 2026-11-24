@@ -79,19 +79,23 @@ fun <F, W, Rest, A> writer(body: Body<F, Writer<W>, Rest, A>): Prog<F, Rest, Pai
     }, body)
 
 /** failure with an error of type `E`: the rest dropped */
-class Fail<E> private constructor() {
-    class Raise<E, X>(val error: E) : Op<Fail<E>, X>
+class Throws<E> private constructor() {
+    class Raise<E, X>(val error: E) : Op<Throws<E>, X>
 }
 
-context(fx: Effects<F>, at: In<Fail<E>, R>) fun <F, E, R> raise(e: E): Prog<F, R, Nothing> =
-    fx.perform(at, Fail.Raise(e))
+/** the old name of [Throws] */
+@Deprecated("the family's name is Throws", ReplaceWith("Throws<E>"))
+typealias Fail<E> = Throws<E>
+
+context(fx: Effects<F>, at: In<Throws<E>, R>) fun <F, E, R> raise(e: E): Prog<F, R, Nothing> =
+    fx.perform(at, Throws.Raise(e))
 
 /** the body's value, or the error it raised */
 context(fx: Effects<F>)
-fun <F, E, Rest, A> either(body: Body<F, Fail<E>, Rest, A>): Prog<F, Rest, Either<E, A>> =
-    handled(object : Abort<F, Fail<E>, Rest, A, Either<E, A>>() {
-        override fun <X> abort(op: Op<Fail<E>, X>): Prog<F, Rest, Either<E, A>> = when (op) {
-            is Fail.Raise -> fx.pure(Either.Left(op.error))
+fun <F, E, Rest, A> either(body: Body<F, Throws<E>, Rest, A>): Prog<F, Rest, Either<E, A>> =
+    handled(object : Abort<F, Throws<E>, Rest, A, Either<E, A>>() {
+        override fun <X> abort(op: Op<Throws<E>, X>): Prog<F, Rest, Either<E, A>> = when (op) {
+            is Throws.Raise -> fx.pure(Either.Left(op.error))
             else -> foreign(op)
         }
         override fun value(a: A): Prog<F, Rest, Either<E, A>> = fx.pure(Either.Right(a))

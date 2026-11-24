@@ -8,15 +8,15 @@ import kotlin.test.assertFailsWith
 /** the paper's EFF state, Fig. 10, as data: H_ST = {return x ↦ λs.return x} ⊎ {get _ k ↦ λs.k! s s} ⊎ {put s' k ↦
  * λ_.k! () s'} — the handler's value a function of the state, each clause one that resumes k when applied */
 context(fx: Effects<F>)
-fun <F, A> runStateEff(body: Body<F, State<Boolean>, Nil, A>): Prog<F, Nil, (Boolean) -> Prog<F, Nil, A>> =
-    handled(object : General<F, State<Boolean>, Nil, A, (Boolean) -> Prog<F, Nil, A>>() {
-        override fun <X> op(op: Op<State<Boolean>, X>, k: (X) -> Prog<F, Nil, (Boolean) -> Prog<F, Nil, A>>):
-            Prog<F, Nil, (Boolean) -> Prog<F, Nil, A>> = when (op) {
+fun <F, A> runStateEff(body: Body<F, State<Boolean>, Pure, A>): Prog<F, Pure, (Boolean) -> Prog<F, Pure, A>> =
+    handled(object : General<F, State<Boolean>, Pure, A, (Boolean) -> Prog<F, Pure, A>>() {
+        override fun <X> op(op: Op<State<Boolean>, X>, k: (X) -> Prog<F, Pure, (Boolean) -> Prog<F, Pure, A>>):
+            Prog<F, Pure, (Boolean) -> Prog<F, Pure, A>> = when (op) {
             is State.Get -> fx.pure { s -> k(op.answer(s)).flatMap { it(s) } }
             is State.Put -> fx.pure { _ -> k(op.answer(Unit)).flatMap { it(op.value) } }
             else -> foreign(op)
         }
-        override fun value(a: A): Prog<F, Nil, (Boolean) -> Prog<F, Nil, A>> = fx.pure { _ -> fx.pure(a) }
+        override fun value(a: A): Prog<F, Pure, (Boolean) -> Prog<F, Pure, A>> = fx.pure { _ -> fx.pure(a) }
     }, body)
 
 /** toggle = {x ← get(); y ← not! x; put y; x} */
@@ -27,8 +27,8 @@ abstract class SpecTck<F>(private val fx: Effects<F>) {
     @Test
     fun effExample32() = with(fx) {
         // runState! toggle True ⇝* True
-        assertEquals(true, run(runStateEff { toggle<F, With<State<Boolean>, Nil>>() }.flatMap { it(true) }))
-        val three = runStateEff { toggle<F, With<State<Boolean>, Nil>>().then(toggle()).then(toggle()) }
+        assertEquals(true, run(runStateEff { toggle<F, Eff<State<Boolean>, Pure>>() }.flatMap { it(true) }))
+        val three = runStateEff { toggle<F, Eff<State<Boolean>, Pure>>().then(toggle()).then(toggle()) }
         // true → false → true → false: the third reads true
         assertEquals(true, run(three.flatMap { it(true) }))
     }
@@ -42,7 +42,7 @@ class MachineOnlyTest {
     @Test
     fun choicesAcrossAFailure() = with(Machine) {
         val r: List<Either<String, Boolean>> =
-            run(all { c -> either { context(lift(c)) { flip<Machine, With<Fail<String>, With<Choose, Nil>>>() } } })
+            run(all { c -> either { context(lift(c)) { flip<Machine, Eff<Throws<String>, Eff<Choose, Pure>>>() } } })
         assertEquals(listOf(Either.Right(true), Either.Right(false)), r)
     }
 
@@ -50,8 +50,8 @@ class MachineOnlyTest {
     fun directResumesOnceAcrossAPromptOfItsOwn() = with(Direct) {
         // Direct copies a continuation only where no handler that takes the rest is between: there, one-shot
         assertFailsWith<IllegalStateException> {
-            run(all { c -> either<Direct, String, With<Choose, Nil>, Boolean> {
-                context(lift(c)) { flip<Direct, With<Fail<String>, With<Choose, Nil>>>() } } })
+            run(all { c -> either<Direct, String, Eff<Choose, Pure>, Boolean> {
+                context(lift(c)) { flip<Direct, Eff<Throws<String>, Eff<Choose, Pure>>>() } } })
         }
         Unit
     }

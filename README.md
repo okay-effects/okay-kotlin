@@ -34,7 +34,7 @@ interface Accounts {
 }
 
 // the program: the domain and a failure, nothing else — its context parameters say so, the compiler checks it
-context(accounts: Accounts, fail: Fail<String>)
+context(accounts: Accounts, fail: Throws<String>)
 suspend fun transfer(from: String, to: String, amount: Int) {
     ensure(accounts.balance(from) >= amount) { "$from has less than $amount" }
     accounts.withdraw(from, amount)
@@ -95,8 +95,8 @@ suspend fun <S, A> state(init: S, body: suspend context(State<S>) () -> A): Pair
 One that ends the body early aborts to its prompt; `finally` blocks of the body run as it unwinds:
 
 ```kotlin
-suspend fun <E, A> either(body: suspend context(Fail<E>) () -> A): Either<E, A> = handle { prompt ->
-    Either.Right(context(Fail<E> { prompt.abort(Either.Left(it)) }) { body() })
+suspend fun <E, A> either(body: suspend context(Throws<E>) () -> A): Either<E, A> = handle { prompt ->
+    Either.Right(context(Throws<E> { prompt.abort(Either.Left(it)) }) { body() })
 }
 ```
 
@@ -125,7 +125,7 @@ suspend fun <A> answering(n: Int, body: suspend context(Ask) () -> A): A = handl
 | `State<S>` | `get`, `put`, `modify`, `gets` | `state(init)` |
 | `Reader<E>` | `ask` | `reader(env)`, `local(f)` |
 | `Writer<W>` | `tell` | `writer`, `listen`, `censor(f)` |
-| `Fail<E>` | `raise`, `ensure`, `Either.bind()` | `either`, `recover` |
+| `Throws<E>` | `raise`, `ensure`, `Either.bind()` | `either`, `recover` |
 | `Abort` | `T?.bind()` | `optional` |
 | `Emit<O>` | `emit` | `collect`, `forEach(f)`, `take(n)` |
 | `Choose` (multi-shot: JVM, JS) | `among`, `flip`, `none` | `all`, `first` |
@@ -153,8 +153,8 @@ class State<S> private constructor() {
     class Put<S, X>(val value: S, val answer: (Unit) -> X) : Op<State<S>, X>
 }
 
-// a program: any engine F, any row R with a State<Int> and a Fail<String> — its places say where
-context(fx: Effects<F>, st: In<State<Int>, R>, fail: In<Fail<String>, R>)
+// a program: any engine F, any row R with a State<Int> and a Throws<String> — its places say where
+context(fx: Effects<F>, st: In<State<Int>, R>, fail: In<Throws<String>, R>)
 fun <F, R> tick(): Prog<F, R, Int> = get<F, Int, R>().flatMap { n ->
     if (n >= 3) raise("big $n") else put<F, Int, R>(n + 1).with(n)
 }
@@ -180,7 +180,7 @@ engine to the same answers; `SpecTck` runs the paper's EFF state (Fig. 10) on bo
 
 An effect's capability wrapped by `intercepted(interceptor)` shows each operation to the interceptor first, as data —
 `Operation(effect, name, args)` — with `proceed`, the way on to its handler. The interceptor tells (an observer, a
-trail), passes it on, or refuses it (throws, or `raise`s to the program's own `Fail`):
+trail), passes it on, or refuses it (throws, or `raise`s to the program's own `Throws`):
 
 ```kotlin
 val trail = observer { op, outcome -> log += "$op -> $outcome" }            // each operation and its answer

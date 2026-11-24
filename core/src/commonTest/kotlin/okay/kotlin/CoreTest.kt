@@ -22,7 +22,7 @@ suspend fun bothWays(body: suspend context(Ask) () -> Int): Int = handle { promp
 }
 
 class CoreTest {
-    context(a: Ask, f: Fail<String>)
+    context(a: Ask, f: Throws<String>)
     suspend fun checked(): Int {
         val x = a.ask()
         ensure(x <= 5) { "big $x" }

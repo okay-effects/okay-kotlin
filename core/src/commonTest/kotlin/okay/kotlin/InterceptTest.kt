@@ -78,13 +78,13 @@ class InterceptTest {
         val seen = mutableListOf<String>()
         val r = runEffects {
             either<String, Int> {
-                context(contextOf<Fail<String>>().intercepted(observer { op, outcome ->
+                context(contextOf<Throws<String>>().intercepted(observer { op, outcome ->
                     seen += "$op abandoned: ${outcome.exceptionOrNull() is Abandoned}"
                 })) { raise("no") }
             }
         }
         assertEquals(Either.Left("no"), r)
-        assertEquals(listOf("Fail.raise(no) abandoned: true"), seen)
+        assertEquals(listOf("Throws.raise(no) abandoned: true"), seen)
     }
 
     @Test

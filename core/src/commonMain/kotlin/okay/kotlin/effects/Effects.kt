@@ -72,7 +72,7 @@ interface Effects<F> {
     /** a program of `R` where the row is `S`, its operations renamed on their way out */
     fun <R, S, A> embed(p: Prog<F, R, A>, sub: Sub<R, S>): Prog<F, S, A>
     /** a program of no effect left, run */
-    fun <A> run(p: Prog<F, Nil, A>): A
+    fun <A> run(p: Prog<F, Pure, A>): A
 }
 
 // ---- THE WORDS, for every engine: its own from the context
@@ -80,7 +80,7 @@ interface Effects<F> {
 context(fx: Effects<F>) fun <F, R, A> pure(a: A): Prog<F, R, A> = fx.pure(a)
 context(fx: Effects<F>) fun <F, R> unit(): Prog<F, R, Unit> = fx.pure(Unit)
 context(fx: Effects<F>) fun <F, R, A> defer(make: () -> Prog<F, R, A>): Prog<F, R, A> = fx.defer(make)
-context(fx: Effects<F>) fun <F, A> run(p: Prog<F, Nil, A>): A = fx.run(p)
+context(fx: Effects<F>) fun <F, A> run(p: Prog<F, Pure, A>): A = fx.run(p)
 
 context(fx: Effects<F>)
 fun <F, R, A, B> Prog<F, R, A>.flatMap(f: (A) -> Prog<F, R, B>): Prog<F, R, B> = fx.bind(this, f)
@@ -111,7 +111,7 @@ fun <F, R, S, A> Prog<F, R, A>.into(sub: Sub<R, S>): Prog<F, S, A> = fx.embed(th
 
 /** this program inside a handler of `G` it does not see: its operations past it */
 context(fx: Effects<F>)
-fun <F, G, R, A> Prog<F, R, A>.lifted(): Prog<F, With<G, R>, A> = fx.embed(this, Sub.Inner())
+fun <F, G, R, A> Prog<F, R, A>.lifted(): Prog<F, Eff<G, R>, A> = fx.embed(this, Sub.Inner())
 
 /**
  * `E`'s operations in `p` handled by `h`, in the row they are in: `h` sees each first, and passes it on — performs it
@@ -121,7 +121,7 @@ context(fx: Effects<F>)
 fun <F, E, R, A, B> intercept(at: In<E, R>, p: Prog<F, R, A>, h: Handler<F, E, R, A, B>): Prog<F, R, B> =
     fx.handle(fx.embed(p, interposing(at)), Place.Last(), h)
 
-private fun <E, R, Rest> interposing(at: Place<E, R, Rest>): Sub<R, With<E, R>> = Sub.Interposing(at)
+private fun <E, R, Rest> interposing(at: Place<E, R, Rest>): Sub<R, Eff<E, R>> = Sub.Interposing(at)
 
 /** a loop's next step: again from a state, or done with a value */
 sealed interface Next<out S, out A> {
@@ -131,7 +131,7 @@ sealed interface Next<out S, out A> {
 
 /** a handler's body: given its effect's place, as a context and as `it`, and the lifting of places from outside */
 typealias Body<F, E, Rest, A> =
-    context(Place<E, With<E, Rest>, Rest>, Under<E, Rest>) (Place<E, With<E, Rest>, Rest>) -> Prog<F, With<E, Rest>, A>
+    context(Place<E, Eff<E, Rest>, Rest>, Under<E, Rest>) (Place<E, Eff<E, Rest>, Rest>) -> Prog<F, Eff<E, Rest>, A>
 
 /** the body with its effect handled by `h` at the last place */
 context(fx: Effects<F>)

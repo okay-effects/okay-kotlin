@@ -46,12 +46,12 @@ abstract class RenamingTck<F>(private val fx: Effects<F>) {
 
     @Test
     fun aroundChangesWhatAGetGives() = with(fx) {
-        val doubling = object : Around<F, State<Int>, With<State<Int>, Nil>> {
-            override fun <X> around(op: Op<State<Int>, X>, proceed: Prog<F, With<State<Int>, Nil>, X>):
-                Prog<F, With<State<Int>, Nil>, X> = when (op) {
+        val doubling = object : Around<F, State<Int>, Eff<State<Int>, Pure>> {
+            override fun <X> around(op: Op<State<Int>, X>, proceed: Prog<F, Eff<State<Int>, Pure>, X>):
+                Prog<F, Eff<State<Int>, Pure>, X> = when (op) {
                 // the state's own, asked of the handler outside, doubled
                 is State.Get ->
-                    fx.perform(Place.Last<State<Int>, Nil>(), State.Get<Int, Int> { it }).map { op.answer(it * 2) }
+                    fx.perform(Place.Last<State<Int>, Pure>(), State.Get<Int, Int> { it }).map { op.answer(it * 2) }
                 else -> proceed
             }
         }
@@ -60,7 +60,7 @@ abstract class RenamingTck<F>(private val fx: Effects<F>) {
 
     @Test
     fun aProgramOfAnotherRowLiftedPastAHandlerItDoesNotSee() = with(fx) {
-        val outer: Prog<F, With<Reader<Int>, Nil>, Int> = context(Place.Last<Reader<Int>, Nil>()) { ask() }
+        val outer: Prog<F, Eff<Reader<Int>, Pure>, Int> = context(Place.Last<Reader<Int>, Pure>()) { ask() }
         // inside a reader of 2, lifted: it asks the reader of 1, past the one it does not see
         assertEquals(1, run(reader(1) { reader(2) { outer.lifted() } }))
     }

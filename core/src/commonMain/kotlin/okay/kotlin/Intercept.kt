@@ -18,7 +18,7 @@ data class Operation(val effect: String, val name: String, val args: List<Any?>)
 /** what happens around each operation of the capabilities it wraps */
 interface Interceptor {
     /** `proceed` is the way on to the handler — called, the operation is performed and its answer given back; not
-     * called, the operation is refused: throw, or `raise` to a `Fail` of the program's */
+     * called, the operation is refused: throw, or `raise` to a `Throws` of the program's */
     suspend fun <X> around(op: Operation, proceed: suspend () -> X): X
 }
 

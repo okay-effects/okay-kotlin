@@ -23,7 +23,7 @@ object Direct : Effects<Direct> {
         D.Handle(body.d(), at, h)
     override fun <R, S, A> embed(p: Prog<Direct, R, A>, sub: Sub<R, S>): Prog<Direct, S, A> = D.Remap(p.d(), sub)
 
-    override fun <A> run(p: Prog<Direct, Nil, A>): A = runEffects { eval(p.d(), Handlers.None) }
+    override fun <A> run(p: Prog<Direct, Pure, A>): A = runEffects { eval(p.d(), Handlers.None) }
 }
 
 private fun <R, A> Prog<Direct, R, A>.d(): D<R, A> = when (this) {

@@ -3,13 +3,13 @@ package okay.kotlin.effects
 // PROGRAMS WRITTEN ONCE: generic in the engine `F` and in the row `R`, their effects their places
 
 /** the state's value, then one more; past 3, a failure */
-context(fx: Effects<F>, st: In<State<Int>, R>, fail: In<Fail<String>, R>)
+context(fx: Effects<F>, st: In<State<Int>, R>, fail: In<Throws<String>, R>)
 fun <F, R> tick(): Prog<F, R, Int> = get<F, Int, R>().flatMap { n ->
     if (n >= 3) raise("big $n") else put<F, Int, R>(n + 1).with(n)
 }
 
 /** `n` ticks */
-context(fx: Effects<F>, st: In<State<Int>, R>, fail: In<Fail<String>, R>)
+context(fx: Effects<F>, st: In<State<Int>, R>, fail: In<Throws<String>, R>)
 fun <F, R> ticks(n: Int): Prog<F, R, List<Int>> =
     if (n == 0) pure(emptyList()) else tick<F, R>().flatMap { a -> ticks<F, R>(n - 1).map { listOf(a) + it } }
 

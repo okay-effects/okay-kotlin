@@ -13,7 +13,7 @@ interface State<S> {
     suspend fun put(s: S)
 }
 
-context(state: State<Int>, fail: Fail<String>)
+context(state: State<Int>, fail: Throws<String>)
 suspend fun tick(): Int { ... }
 ```
 
@@ -21,7 +21,7 @@ Kotlin has no higher-kinded types and no GADT refinement, so an effect as data �
 type a type parameter recovered in the handler — costs a witness or a cast. An interface needs neither: each
 operation is a method with its own signature, and the compiler checks every answer. What okay-simple's rows do —
 say what a program needs, and refuse it where no handler gives it — context parameters do: `tick()` compiles only
-where a `State<Int>` and a `Fail<String>` are in the context. Two states are told apart by their types.
+where a `State<Int>` and a `Throws<String>` are in the context. Two states are told apart by their types.
 
 A handler is a function: it implements the interface and runs the body with it, `context(impl) { body() }`. One that
 wraps another handler is an implementation by delegation, `object : Store<K, V> by store { ... }` — the interceptors
@@ -32,7 +32,7 @@ of okay-direct and okay-scala's `intercept` and `around`, with nothing of the li
 - **In place** — the answer given where the operation is asked, the body going on: `State`, `Reader`, `Writer`,
   `Store`, `Log`, `Clock`. A plain implementation: a virtual call, no continuation, nothing allocated. This is
   okay-scala's `Tail` and `Stateful` shapes, and costs what any interface call costs.
-- **Abort** — the rest dropped, a value of the handler's instead: `Fail`, `Abort`, `take`. `prompt.abort(value)`.
+- **Abort** — the rest dropped, a value of the handler's instead: `Throws`, `Abort`, `take`. `prompt.abort(value)`.
 - **General** — the rest taken as `k`, resumed in the handler: `prompt.shift { k -> ... }`.
 
 The last two need the rest of the body as a value: a delimited continuation, `handle` and `shift`.
@@ -68,7 +68,7 @@ literature do — state as a function of the state, `get _ k ↦ λs. k! s s`.
 
 **The rest dropped.** `k.drop()` resumes the rest with `Abandoned`, a `CancellationException`: the body unwinds — its
 `finally` blocks run, `use` closes what it opened — OCaml's `discontinue`. `abort(value)` drops the rest and gives
-`value`; `Fail`, `Abort` and `take` end so. A rest neither resumed nor dropped is left as it is: nothing can know
+`value`; `Throws`, `Abort` and `take` end so. A rest neither resumed nor dropped is left as it is: nothing can know
 that a kept `k` will never be resumed.
 
 **One-shot.** A Kotlin continuation is resumed once. `k` used twice is an error; multi-shot handlers — every way of a
@@ -125,7 +125,7 @@ a function made under one handler and called under another asks the second. In o
 of a capability, and the capability is the handler that made it: the function asks the first. This is the semantics
 of lexically scoped handlers — Zhang and Myers' tunnelling (POPL 2019), Biernacki et al.'s lexically scoped handlers
 (POPL 2020), Effekt's capabilities (Brachthäuser et al., OOPSLA 2020) — chosen there because the dynamic one breaks
-abstraction: a function that handles its own `Fail` inside would catch the failures of a callback it is given, which
+abstraction: a function that handles its own `Throws` inside would catch the failures of a callback it is given, which
 it knows nothing of. It is also the only one Kotlin can type: a handler found at run time by its effect's type finds
 an erased type — `State<Int>` and `State<String>` are one class — and its answer would need a cast.
 
@@ -163,7 +163,7 @@ abstract class each engine's nodes extend — and `Effects<F>` is its words. A p
 as a context parameter: Scala's import, as a parameter. An engine refuses another's program with an error, never a
 cast: `is Node` on a `Prog<Machine, R, A>` finds the node's type by its declaration.
 
-**Rows and places.** okay-scala's `R + E` is `With<E, R>`; an operation of the row is `At<R, X>`, placed; a `Place<E,
+**Rows and places.** okay-scala's `R + E` is `Eff<E, R>`; an operation of the row is `At<R, X>`, placed; a `Place<E,
 R, Rest>` injects an operation of `E` into `R`, takes one of `R` apart into `E`'s own or another's in `Rest`, and finds
 `E`'s handler in a row of handler objects — each place a class that knows its shape, which is what okay-scala's
 matches on GADTs know. Scala finds places by implicit search; Kotlin does not, so a handler gives its body the place
